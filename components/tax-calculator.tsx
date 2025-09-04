@@ -121,7 +121,7 @@ const defaultRules: TaxRules = {
 };
 
 /**
- * Utility helpers
+ * Utility helpers (safer date parsing & month/day helpers)
  */
 const monthMap: Record<string, number> = {
   JANUARY: 1,
@@ -149,17 +149,22 @@ const monthMap: Record<string, number> = {
   DEC: 12,
 };
 
-function monthDiff(fromDate: Date, toDate: Date): number {
-  const from = new Date(fromDate.getFullYear(), fromDate.getMonth(), 1);
-  const to = new Date(toDate.getFullYear(), toDate.getMonth(), 1);
-  return (
-    (to.getFullYear() - from.getFullYear()) * 12 +
-    (to.getMonth() - from.getMonth())
-  );
+function parseISODate(input: string | Date | undefined | null): Date {
+  if (!input) return new Date(NaN);
+  if (input instanceof Date)
+    return new Date(input.getFullYear(), input.getMonth(), input.getDate());
+  // expecting YYYY-MM-DD
+  const parts = input.split("-");
+  if (parts.length < 3) return new Date(input);
+  const y = Number(parts[0]);
+  const m = Number(parts[1]);
+  const d = Number(parts[2]);
+  return new Date(y, m - 1, d);
 }
 
-function toDate(d: string | Date): Date {
-  return d instanceof Date ? d : new Date(d);
+function clampDate(year: number, monthIndex: number, day: number): Date {
+  const last = new Date(year, monthIndex + 1, 0).getDate();
+  return new Date(year, monthIndex, Math.min(day, last));
 }
 
 function getFinancialYearEnd(monthStr: string, year: number): Date {
@@ -173,6 +178,33 @@ function getFinancialYearEnd(monthStr: string, year: number): Date {
   }
 
   return new Date(year, month - 1, new Date(year, month, 0).getDate());
+}
+
+/**
+ * Compute month difference used for penalty tiers. This counts *calendar months*
+ * with a rule: if the day-of-month of `toDate` is >= day-of-month of `fromDate`,
+ * count that partial month as a full month. If toDate <= fromDate, return 0.
+ */
+function monthDiffForPenalties(fromDate: Date, toDate: Date): number {
+  const f = new Date(
+    fromDate.getFullYear(),
+    fromDate.getMonth(),
+    fromDate.getDate()
+  );
+  const t = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate());
+  if (t <= f) return 0;
+  const yearDiff = t.getFullYear() - f.getFullYear();
+  let months = yearDiff * 12 + (t.getMonth() - f.getMonth());
+  if (t.getDate() >= f.getDate()) months += 1;
+  return months;
+}
+
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+function daysBetween(start: Date, end: Date) {
+  const s = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+  const e = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+  return Math.max(0, Math.round((e.getTime() - s.getTime()) / MS_PER_DAY));
 }
 
 /**
@@ -208,7 +240,11 @@ function calculateLateFilingPenaltyWithRules(
   // default / tier-based
   const tiers = rules.penaltyTiers || defaultRules.penaltyTiers!;
   if (actualFiledDate <= fyEndDate) return 0;
-  const monthsLate = Math.max(1, monthDiff(fyEndDate, actualFiledDate));
+
+  const monthsLate = Math.max(
+    1,
+    monthDiffForPenalties(fyEndDate, actualFiledDate)
+  );
 
   // find highest threshold <= monthsLate
   const { thresholds, individual, company } = tiers;
@@ -230,7 +266,8 @@ function calculateInterestWithRules(
   paymentDate: Date
 ): number {
   if (
-    !outstandingAmount ||
+    typeof outstandingAmount !== "number" ||
+    outstandingAmount <= 0 ||
     !dueDate ||
     !paymentDate ||
     paymentDate <= dueDate
@@ -238,27 +275,36 @@ function calculateInterestWithRules(
     return 0;
   }
 
-  const periods = rules.interestPeriods || defaultRules.interestPeriods!;
+  const rawPeriods = rules.interestPeriods ?? defaultRules.interestPeriods!;
+  // normalize periods to dates and sort
+  const periods = rawPeriods
+    .map((p) => ({
+      start: parseISODate(p.start as any),
+      end: parseISODate(p.end as any),
+      rate: p.rate,
+    }))
+    .sort((a, b) => a.start.getTime() - b.start.getTime());
+
   let totalInterest = 0;
-  let currentDate = new Date(dueDate);
 
   for (const p of periods) {
-    if (currentDate >= paymentDate) break;
-    const start = toDate(p.start);
-    const end = toDate(p.end);
-
+    if (paymentDate <= p.start) break;
     const periodStart = new Date(
-      Math.max(currentDate.getTime(), start.getTime())
+      Math.max(dueDate.getTime(), p.start.getTime())
     );
-    const periodEnd = new Date(Math.min(paymentDate.getTime(), end.getTime()));
+    const periodEnd = new Date(
+      Math.min(paymentDate.getTime(), p.end.getTime())
+    );
+    if (periodStart >= periodEnd) continue;
 
-    if (periodStart < periodEnd) {
-      const months = monthDiff(periodStart, periodEnd);
-      if (months > 0) {
-        totalInterest += outstandingAmount * months * p.rate;
-        currentDate = periodEnd;
-      }
-    }
+    const overlapDays = daysBetween(periodStart, periodEnd);
+    if (overlapDays <= 0) continue;
+
+    // Convert monthly rate to daily via annual approximation
+    const annualRate = p.rate * 12; // e.g. 0.006 * 12 = 0.072 => 7.2% p.a.
+    const dailyRate = annualRate / 365;
+
+    totalInterest += outstandingAmount * dailyRate * overlapDays;
   }
 
   return Math.round(totalInterest * 100) / 100;
@@ -292,9 +338,9 @@ function defaultValidate(
   if (!data.filingDate) {
     errors.filingDate = "Filing date is required.";
   } else {
-    const filingDate = new Date(data.filingDate);
+    const filingDate = parseISODate(data.filingDate);
     const fyEndDate = getFinancialYearEnd(data.fyMonth, data.taxYear);
-    const earliestDate = new Date(
+    const earliestDate = clampDate(
       fyEndDate.getFullYear() - 2,
       fyEndDate.getMonth(),
       fyEndDate.getDate()
@@ -312,8 +358,8 @@ function defaultValidate(
   if (!data.paymentDate) {
     errors.paymentDate = "Payment date is required.";
   } else if (data.dueDate && data.paymentDate) {
-    const dueDate = new Date(data.dueDate);
-    const paymentDate = new Date(data.paymentDate);
+    const dueDate = parseISODate(data.dueDate);
+    const paymentDate = parseISODate(data.paymentDate);
     if (paymentDate < dueDate) {
       errors.paymentDate = "Payment date must be on or after the due date.";
     }
@@ -396,9 +442,9 @@ export default function TaxCalculator({
     setErrors({});
 
     const fyEndDate = getFinancialYearEnd(formData.fyMonth, formData.taxYear);
-    const filedDate = new Date(formData.filingDate);
-    const payDate = new Date(formData.paymentDate);
-    const due = new Date(formData.dueDate);
+    const filedDate = parseISODate(formData.filingDate);
+    const payDate = parseISODate(formData.paymentDate);
+    const due = parseISODate(formData.dueDate);
 
     const penalty = calculateLateFilingPenaltyWithRules(
       rules,
@@ -415,8 +461,11 @@ export default function TaxCalculator({
     );
     const total =
       Math.round((formData.outstanding + penalty + interest) * 100) / 100;
+
     const monthsLate =
-      filedDate > fyEndDate ? monthDiff(fyEndDate, filedDate) : 0;
+      filedDate > fyEndDate
+        ? Math.max(1, monthDiffForPenalties(fyEndDate, filedDate))
+        : 0;
 
     const res: CalculationResult = {
       fyEndDate,
@@ -512,7 +561,7 @@ export default function TaxCalculator({
                   <Input
                     id="taxYear"
                     type="number"
-                    placeholder="e.g. 2024"
+                    placeholder="e.g. 2025"
                     value={formData.taxYear}
                     onChange={(e) =>
                       handleInputChange("taxYear", Number(e.target.value))
@@ -715,6 +764,7 @@ export default function TaxCalculator({
                         <li>• {formData.taxpayerType} penalty tier applies</li>
                         <li>
                           • Interest calculated from due date to payment date
+                          (prorated by days)
                         </li>
                       </ul>
                     </div>
@@ -735,13 +785,10 @@ export default function TaxCalculator({
             </CardContent>
           </Card>
         </div>
-        {/* 
-
-*/}
 
         <Card className="shadow-lg">
           <CardContent className="pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1  gap-6">
               <div>
                 <h3 className="font-semibold mb-3 flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 text-amber-500" />
@@ -753,7 +800,6 @@ export default function TaxCalculator({
                     <span>Individual</span>
                     <span>Company</span>
                   </div>
-                  {/* Render tiers if available */}
                   {(rules.penaltyTiers ?? defaultPenaltyTiers).thresholds.map(
                     (t, idx) => {
                       const next = (rules.penaltyTiers ?? defaultPenaltyTiers)
@@ -788,7 +834,7 @@ export default function TaxCalculator({
                 </div>
               </div>
 
-              <div>
+              {/* <div>
                 <h3 className="font-semibold mb-3 flex items-center gap-2">
                   <Euro className="h-4 w-4 text-blue-500" />
                   Interest Rates
@@ -796,8 +842,12 @@ export default function TaxCalculator({
                 <div className="text-sm space-y-2 text-gray-600 dark:text-gray-300">
                   {(rules.interestPeriods ?? defaultInterestPeriods).map(
                     (p, i) => {
-                      const s = new Date(p.start).toISOString().slice(0, 10);
-                      const e = new Date(p.end).toISOString().slice(0, 10);
+                      const s = new Date(p.start as string)
+                        .toISOString()
+                        .slice(0, 10);
+                      const e = new Date(p.end as string)
+                        .toISOString()
+                        .slice(0, 10);
                       return (
                         <div key={i}>
                           • {s} to {e}: {(p.rate * 100).toFixed(2)}% per month
@@ -806,7 +856,7 @@ export default function TaxCalculator({
                     }
                   )}
                 </div>
-              </div>
+              </div> */}
             </div>
             <div className="mt-4 pt-4 border-t text-xs text-gray-500 dark:text-gray-400 text-center">
               This calculator provides estimates based on configured rules.

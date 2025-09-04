@@ -31,5 +31,5 @@ const maltaRules: TaxRules = {
 //  };
 
 export default function Page() {
-  return <TaxCalculator rules={maltaRules} defaultValues={{ taxYear: 2024 }} />;
+  return <TaxCalculator rules={maltaRules} defaultValues={{ taxYear: 2025 }} />;
 }

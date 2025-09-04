@@ -4,46 +4,46 @@ Taxpayer Type: Individual
 
 Financial Year-End Month: March
 
-Tax Year: 2024
+Tax Year: 2025
 
-Filing Date: 03/15/2024
+Filing Date: 03/15/2025
 
-Due Date: 06/30/2024
+Due Date: 06/30/2025
 
-Payment Date: 06/30/2024
+Payment Date: 06/30/2025
 
 Outstanding: 1000
 Expect: No penalty, no interest, total = €1000
 
 2) Filing exactly on FY end (no penalty)
 
-Filing Date: 03/31/2024
+Filing Date: 03/31/2025
 
-Due Date: 06/30/2024
+Due Date: 06/30/2025
 
-Payment Date: 07/01/2024
+Payment Date: 07/01/2025
 
 Outstanding: 500
 Expect: No filing penalty. Interest applies (payment late).
 
 3) Filing 1 day late (1 month late)
 
-Filing Date: 04/01/2024
+Filing Date: 04/01/2025
 
-Due Date: 06/30/2024
+Due Date: 06/30/2025
 
-Payment Date: 07/15/2024
+Payment Date: 07/15/2025
 
 Outstanding: 2000
 Expect: Penalty €10 (Individual). Interest too.
 
 4) Filing exactly 7 months late
 
-Filing Date: 10/31/2024
+Filing Date: 10/31/2025
 
-Due Date: 06/30/2024
+Due Date: 06/30/2025
 
-Payment Date: 11/15/2024
+Payment Date: 11/15/2025
 
 Outstanding: 1500
 Expect: Penalty €50. Interest too.
@@ -54,11 +54,11 @@ Financial Year-End Month: March
 
 Tax Year: 2019
 
-Filing Date: 04/30/2024
+Filing Date: 04/30/2025
 
 Due Date: 06/30/2019
 
-Payment Date: 05/15/2024
+Payment Date: 05/15/2025
 
 Outstanding: 3000
 Expect: Max penalty €500. Huge interest.
@@ -67,16 +67,16 @@ Expect: Max penalty €500. Huge interest.
 
 6) Payment before due date
 
-Due Date: 06/30/2024
+Due Date: 06/30/2025
 
-Payment Date: 06/01/2024
+Payment Date: 06/01/2025
 Expect: Error → “Payment date must be on or after the due date.”
 
 7) Payment equals due date (no interest)
 
-Due Date: 06/30/2024
+Due Date: 06/30/2025
 
-Payment Date: 06/30/2024
+Payment Date: 06/30/2025
 
 Outstanding: 1200
 Expect: No interest. Penalty depends only on filing.
@@ -101,7 +101,7 @@ Expect: Interest partly at 0.33% and partly at 0.6%.
 
 10) Filing unreasonably early
 
-FY End = 03/31/2024
+FY End = 03/31/2025
 
 Filing Date: 12/01/2021
 Expect: Error → “Filing date seems unreasonably early.”
