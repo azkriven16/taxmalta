@@ -724,8 +724,8 @@ export default function TaxCalculator({
                 <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                   <Calculator className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>
-                    Fill out the form and click "Calculate Penalties" to see
-                    your results.
+                    Fill out the form and click &quot;Calculate Penalties&quot;
+                    to see your results.
                   </p>
                   <p className="text-sm mt-2">
                     All fields are required for accurate calculations.
