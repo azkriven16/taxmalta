@@ -1,121 +1,132 @@
-Quick test cases
-1) On-time filing & payment (no penalties or interest)
+1) On-time filing & payment (no penalties/interest)
 
-fyMonth: March
+Taxpayer Type: Individual
 
-taxYear: 2024 → FY end = 2024-03-31
+Financial Year-End Month: March
 
-filingDate: 2024-03-15
+Tax Year: 2024
 
-dueDate: 2024-06-30
+Filing Date: 03/15/2024
 
-paymentDate: 2024-06-30
+Due Date: 06/30/2024
 
-outstanding: 1000
-Expect: No penalty, no interest, total = outstanding.
+Payment Date: 06/30/2024
+
+Outstanding: 1000
+Expect: No penalty, no interest, total = €1000
 
 2) Filing exactly on FY end (no penalty)
 
-FY end = 2024-03-31
+Filing Date: 03/31/2024
 
-filingDate: 2024-03-31
+Due Date: 06/30/2024
 
-dueDate: 2024-06-30, paymentDate: 2024-07-01, outstanding: 500
-Expect: Filing on FY end => no late filing penalty; interest may apply if payment after due date.
+Payment Date: 07/01/2024
 
-3) Filing 1 day late (counts as 1 month late → lowest tier)
+Outstanding: 500
+Expect: No filing penalty. Interest applies (payment late).
 
-FY end = 2024-03-31
+3) Filing 1 day late (1 month late)
 
-filingDate: 2024-04-01
+Filing Date: 04/01/2024
 
-dueDate: 2024-06-30, paymentDate: 2024-07-15, outstanding: 2000
-Expect: monthsLate = 1 → Individual penalty ≈ €10 (default tier). Interest on late payment from due date to payment date.
+Due Date: 06/30/2024
 
-4) Filing exactly at 7 months late (switch to 2nd tier)
+Payment Date: 07/15/2024
 
-FY end = 2024-03-31
+Outstanding: 2000
+Expect: Penalty €10 (Individual). Interest too.
 
-filingDate: 2024-10-31
+4) Filing exactly 7 months late
 
-dueDate: 2024-06-30, paymentDate: 2024-11-15, outstanding: 1500
-Expect: monthsLate = 7 → Individual penalty ≈ €50 (default). Interest applies.
+Filing Date: 10/31/2024
+
+Due Date: 06/30/2024
+
+Payment Date: 11/15/2024
+
+Outstanding: 1500
+Expect: Penalty €50. Interest too.
 
 5) Very long overdue (61+ months)
 
-FY end = 2019-03-31
+Financial Year-End Month: March
 
-filingDate: 2024-04-30
+Tax Year: 2019
 
-dueDate: 2019-06-30, paymentDate: 2024-05-15, outstanding: 3000
-Expect: monthsLate ≥ 61 → highest tier penalty (default Individual €500). Interest for many months; total large.
+Filing Date: 04/30/2024
 
-6) Payment before due date (invalid input)
+Due Date: 06/30/2019
 
-Any FY (e.g., FY end 2024-03-31)
+Payment Date: 05/15/2024
 
-dueDate: 2024-06-30, paymentDate: 2024-06-01 (earlier)
-Expect: Validation error: “Payment date must be on or after the due date.” — no calculation.
+Outstanding: 3000
+Expect: Max penalty €500. Huge interest.
+
+⚠️ Validation Error Cases
+
+6) Payment before due date
+
+Due Date: 06/30/2024
+
+Payment Date: 06/01/2024
+Expect: Error → “Payment date must be on or after the due date.”
 
 7) Payment equals due date (no interest)
 
-dueDate: 2024-06-30, paymentDate: 2024-06-30, outstanding 1200
-Expect: No interest charged (payment on due date). Penalty depends only on filing date.
+Due Date: 06/30/2024
 
-8) Interest crossing many historic rate periods (multi-period interest)
+Payment Date: 06/30/2024
 
-dueDate: 2013-12-31
+Outstanding: 1200
+Expect: No interest. Penalty depends only on filing.
 
-paymentDate: 2022-07-15
+8) Interest across multiple historic periods
 
-outstanding: 10000
-Expect: Interest computed in segments across multiple rate periods (2009–2013 rate, 2014–2019 rate, 2020–2022 rate, and 2022-06-01+ rate where applicable). Good test to ensure the piecewise interest calculation works.
+Due Date: 12/31/2013
 
-9) Edge: payment straddles the 2022-06-01 interest-rate boundary
+Payment Date: 07/15/2022
 
-dueDate: 2022-05-01
+Outstanding: 10000
+Expect: Interest split across old rates.
 
-paymentDate: 2022-07-15
+9) Edge: crossing 2022-06-01 rate change
 
-outstanding: 5000
-Expect: Part of the delay falls before 2022-06-01 (0.33%/month) and part after (0.6%/month). You should see the calculation reflect both rates.
+Due Date: 05/01/2022
 
-10) Filing date unreasonably early (validation: too-early filing)
+Payment Date: 07/15/2022
 
-FY end = 2024-03-31 → earliest allowed filing in default validation is 2022-03-31
+Outstanding: 5000
+Expect: Interest partly at 0.33% and partly at 0.6%.
 
-filingDate: 2021-12-01
-Expect: Validation error: “Filing date seems unreasonably early for this tax year.”
+10) Filing unreasonably early
 
-11) Negative outstanding amount (invalid)
+FY End = 03/31/2024
 
-outstanding: -100
-Expect: Validation error: “Outstanding amount cannot be negative.”
+Filing Date: 12/01/2021
+Expect: Error → “Filing date seems unreasonably early.”
 
-12) Extremely large outstanding (invalid)
+11) Negative outstanding
 
-outstanding: 1000000000 (1 billion)
-Expect: Validation error: “Outstanding amount is too large.”
+Outstanding: -100
+Expect: Error → “Outstanding amount cannot be negative.”
 
-13) Leap-year FY end (Feb 29)
+12) Extremely large outstanding
 
-fyMonth: February, taxYear: 2020 → FY end = 2020-02-29
+Outstanding: 1000000000
+Expect: Error → “Outstanding amount is too large.”
 
-filingDate: 2020-03-01 (one day later)
+13) Leap year FY end (Feb 29)
 
-dueDate: 2020-05-31, paymentDate: 2020-06-15, outstanding: 800
-Expect: Filing after 2020-02-29 counts as 1 month late (check monthsLate is computed correctly with leap day).
+Financial Year-End Month: February
 
-Quick checklist of what to observe when running each case
+Tax Year: 2020 → FY end = 02/29/2020
 
-Does the component show validation errors where expected? (cases 6, 10, 11, 12)
+Filing Date: 03/01/2020
 
-Is monthsLate shown and does it match expectations for 1 day late, 7 months, 61+ months?
+Due Date: 05/31/2020
 
-Does the penalty badge match the correct tier (e.g., 1 → €10, 7 → €50, 61+ → €500 by default)?
+Payment Date: 06/15/2020
 
-Is interest split correctly across different historic rate periods (cases 8 & 9)?
-
-Does payment on due date correctly yield zero interest?
-
-Are total and breakdown numbers sensible and human-readable?
+Outstanding: 800
+Expect: 1 day late → penalty €10. Interest from June.

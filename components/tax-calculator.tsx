@@ -96,6 +96,7 @@ export interface TaxCalculatorProps {
 /**
  * Defaults: replicates original behavior so migrating is frictionless
  */
+
 const defaultPenaltyTiers: PenaltyTiers = {
   thresholds: [1, 7, 13, 19, 25, 37, 49, 61],
   individual: [10, 50, 100, 150, 200, 300, 400, 500],
@@ -445,7 +446,7 @@ export default function TaxCalculator({
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6">
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -455,7 +456,7 @@ export default function TaxCalculator({
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="space-y-2">
+                <div className="space-y-2 flex justify-around">
                   <Label htmlFor="taxpayerType">Taxpayer Type</Label>
                   <Select
                     value={formData.taxpayerType}
@@ -464,7 +465,9 @@ export default function TaxCalculator({
                     }
                   >
                     <SelectTrigger
-                      className={errors.taxpayerType ? "border-red-500" : ""}
+                      className={
+                        errors.taxpayerType ? "border-red-500" : "w-52"
+                      }
                     >
                       <SelectValue placeholder="Select taxpayer type" />
                     </SelectTrigger>
@@ -478,9 +481,7 @@ export default function TaxCalculator({
                       {errors.taxpayerType}
                     </p>
                   )}
-                </div>
 
-                <div className="space-y-2">
                   <Label htmlFor="fyMonth">Financial Year-End Month</Label>
                   <Select
                     value={formData.fyMonth}
@@ -489,7 +490,7 @@ export default function TaxCalculator({
                     }
                   >
                     <SelectTrigger
-                      className={errors.fyMonth ? "border-red-500" : ""}
+                      className={errors.fyMonth ? "border-red-500" : "w-52"}
                     >
                       <SelectValue placeholder="Select month" />
                     </SelectTrigger>
@@ -734,6 +735,9 @@ export default function TaxCalculator({
             </CardContent>
           </Card>
         </div>
+        {/* 
+
+*/}
 
         <Card className="shadow-lg">
           <CardContent className="pt-6">
@@ -814,48 +818,3 @@ export default function TaxCalculator({
     </div>
   );
 }
-
-/**
- * EXAMPLES: how to pass rules for different countries
- *
- * Example usage (outside this file):
- *
- * import TaxCalculator, { TaxRules } from "./TaxCalculator";
- *
- * const maltaRules: TaxRules = {
- *   penaltyTiers: {
- *     thresholds: [1, 6, 12],
- *     individual: [20, 100, 300],
- *     company: [50, 300, 800],
- *   },
- *   interestPeriods: [
- *     { start: "2020-01-01", end: "9999-12-31", rate: 0.004 }, // 0.4%/month (example)
- *   ],
- *   currencySymbol: "€",
- *   locale: "en-MT",
- * };
- *
- * // Philippines example (illustrative only; replace with real rules)
- * const philRules: TaxRules = {
- *   customPenalty: ({ taxpayerType, fyEndDate, filedDate }) => {
- *     // e.g. PH: 25% of tax due as surcharge + interest — placeholder
- *     const monthsLate = Math.max(0, monthDiff(fyEndDate, filedDate));
- *     // dummy formula: 2% per month + flat surcharge
- *     const surcharge = taxpayerType === "Company" ? 1000 : 500;
- *     const monthPenalty = monthsLate * 0.02 * 1000; // depends on outstanding; adapt as needed
- *     return surcharge + monthPenalty;
- *   },
- *   interestPeriods: [
- *     { start: "2000-01-01", end: "9999-12-31", rate: 0.02 }, // placeholder: 2%/month — replace with real
- *   ],
- *   currencySymbol: "₱",
- *   locale: "en-PH",
- * };
- *
- * <TaxCalculator rules={maltaRules} defaultValues={{ taxYear: 2024 }} />
- *
- * NOTES:
- * - For real countries, replace sample numbers with official rules.
- * - If calculation requires tax base or percent-of-outstanding logic (e.g., penalty = 25% of tax due),
- *   implement that using `customPenalty` and access `formData.outstanding` there.
- */
