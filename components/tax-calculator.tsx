@@ -1,8 +1,6 @@
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -10,7 +8,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { AnimatePresence, motion } from "framer-motion";
+import { useState } from "react";
 
 export default function TaxCalculator() {
   const [form, setForm] = useState({
@@ -220,10 +219,10 @@ export default function TaxCalculator() {
   };
 
   const calc = () => {
-    let outstanding = form.taxAmount ? parseFloat(form.taxAmount) : 0;
-    let penalty = calculatePenalty();
-    let interest = calculateInterest();
-    let total = outstanding + penalty + interest;
+    const outstanding = form.taxAmount ? parseFloat(form.taxAmount) : 0;
+    const penalty = calculatePenalty();
+    const interest = calculateInterest();
+    const total = outstanding + penalty + interest;
     return { outstanding, penalty, interest, total };
   };
 
