@@ -91,7 +91,7 @@ export const NavBody = ({ children, className, visible }: NavBodyProps) => {
         boxShadow: visible
           ? "0 0 24px rgba(34, 42, 53, 0.06), 0 1px 1px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(34, 42, 53, 0.04), 0 0 4px rgba(34, 42, 53, 0.08), 0 16px 68px rgba(47, 48, 55, 0.05), 0 1px 0 rgba(255, 255, 255, 0.1) inset"
           : "none",
-        width: visible ? "40%" : "100%",
+        width: visible ? "80%" : "100%",
         y: visible ? 20 : 0,
       }}
       transition={{
@@ -223,9 +223,15 @@ export const MobileNavToggle = ({
   onClick: () => void;
 }) => {
   return isOpen ? (
-    <HiOutlineXMark className="text-black dark:text-white" onClick={onClick} />
+    <HiOutlineXMark
+      className="size-7 text-black dark:text-white"
+      onClick={onClick}
+    />
   ) : (
-    <HiOutlineBars3 className="text-black dark:text-white" onClick={onClick} />
+    <HiOutlineBars3
+      className="size-7 text-black dark:text-white"
+      onClick={onClick}
+    />
   );
 };
 
@@ -235,8 +241,7 @@ export const NavbarLogo = () => {
       href="/"
       className="relative z-20 mr-4 flex items-center space-x-2 px-2 py-1 text-sm font-normal text-black"
     >
-      <PiCalculatorDuotone className="size-10" />
-      <span className="font-medium text-black dark:text-white">TaxMalta</span>
+      <span className="text-foreground text-lg font-medium">TaxMalta</span>
     </Link>
   );
 };

@@ -11,6 +11,8 @@ import {
   MobileNavMenu,
 } from "@/components/ui/resizable-navbar";
 import { useState } from "react";
+import { Moon, Sun } from "lucide-react";
+import { ModeToggle, ThemeToggleButton } from "./theme-toggle";
 
 export function NavbarDemo() {
   const navItems = [
@@ -29,9 +31,14 @@ export function NavbarDemo() {
   ];
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  const toggleDarkMode = () => {
+    // Empty function as requested
+  };
 
   return (
-    <Navbar className="fixed top-5">
+    <Navbar className="fixed top-0 z-50 md:top-5">
       {/* Desktop Navigation */}
       <NavBody>
         <NavbarLogo />
@@ -39,6 +46,7 @@ export function NavbarDemo() {
         <div className="flex items-center gap-4">
           <NavbarButton variant="secondary">Login</NavbarButton>
           <NavbarButton variant="primary">Get Started</NavbarButton>
+          <ModeToggle />
         </div>
       </NavBody>
 
@@ -46,10 +54,24 @@ export function NavbarDemo() {
       <MobileNav>
         <MobileNavHeader>
           <NavbarLogo />
-          <MobileNavToggle
-            isOpen={isMobileMenuOpen}
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          />
+          <div className="flex items-center gap-2">
+            {/* Mobile Dark Mode Toggle */}
+            <button
+              onClick={toggleDarkMode}
+              className="rounded-lg p-2 transition-colors duration-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+              aria-label="Toggle dark mode"
+            >
+              {isDarkMode ? (
+                <Sun className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+              ) : (
+                <Moon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+              )}
+            </button>
+            <MobileNavToggle
+              isOpen={isMobileMenuOpen}
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            />
+          </div>
         </MobileNavHeader>
 
         <MobileNavMenu

@@ -1,81 +1,111 @@
-import { HoverEffect } from "../ui/card-hover-effect";
-import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import {
+  FaBalanceScale,
+  FaCalculator,
+  FaCoins,
+  FaUserCheck,
+} from "react-icons/fa";
 import { Button } from "@/components/ui/button";
-import { Star } from "lucide-react";
+import { HoverEffect } from "../ui/card-hover-effect";
+import { Highlighter } from "../ui/highlighter";
 
-const reviews = {
-  count: 200,
-  rating: 5.0,
-  avatars: [
-    {
-      src: "https://deifkwefumgah.cloudfront.net/shadcnblocks/block/avatar-1.webp",
-      alt: "Avatar 1",
-    },
-    {
-      src: "https://deifkwefumgah.cloudfront.net/shadcnblocks/block/avatar-2.webp",
-      alt: "Avatar 2",
-    },
-    {
-      src: "https://deifkwefumgah.cloudfront.net/shadcnblocks/block/avatar-3.webp",
-      alt: "Avatar 3",
-    },
-    {
-      src: "https://deifkwefumgah.cloudfront.net/shadcnblocks/block/avatar-4.webp",
-      alt: "Avatar 4",
-    },
-    {
-      src: "https://deifkwefumgah.cloudfront.net/shadcnblocks/block/avatar-5.webp",
-      alt: "Avatar 5",
-    },
-  ],
-};
+const features = [
+  {
+    icon: <FaBalanceScale className="text-foreground text-2xl" />,
+    title: "Malta-Specific Tax Rules",
+    description:
+      "Accurately calculates taxes based on Malta's latest tax regulations.",
+  },
+  {
+    icon: <FaCalculator className="text-foreground text-2xl" />,
+    title: "Instant Results",
+    description:
+      "Get real-time tax estimates for individuals and businesses in seconds.",
+  },
+  {
+    icon: <FaCoins className="text-foreground text-2xl" />,
+    title: "Supports Multiple Income Types",
+    description:
+      "Handles employment, self-employment, rental, and foreign income with ease.",
+  },
+  {
+    icon: <FaUserCheck className="text-foreground text-2xl" />,
+    title: "User-Friendly Interface",
+    description:
+      "Clean, intuitive design that works for everyone — no tax knowledge required.",
+  },
+];
 
 export function HeroSection() {
   return (
     <main className="container mx-auto flex flex-col items-center justify-center space-y-20 p-8 pt-24">
-      <section className="py-32">
+      <div className="absolute inset-0 -z-10">
+        <div className="relative h-full w-full [&>div]:absolute [&>div]:inset-0 [&>div]:bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] [&>div]:bg-[size:14px_24px]">
+          <div></div>
+        </div>
+      </div>
+      <section className="relative md:py-32">
         <div className="container text-center">
           <div className="mx-auto flex max-w-5xl flex-col gap-6">
-            <h1 className="text-3xl font-extrabold lg:text-6xl">
-              No More Guessing Your Tax — Use Our Free Malta Calculator
+            <h1 className="text-3xl leading-tight font-extrabold lg:text-6xl">
+              <Highlighter
+                action="crossed-off"
+                padding={4}
+                multiline={true}
+                color="red"
+                className="text-foreground font-extrabold"
+              >
+                No More
+              </Highlighter>{" "}
+              Guessing Your Tax 🤔
+              <br />— Use Our{" "}
+              <Highlighter
+                action="underline"
+                padding={4}
+                multiline={true}
+                color="oklch(79.5% 0.184 86.047)"
+                className="text-foreground font-extrabold"
+              >
+                Free Malta Calculator
+              </Highlighter>{" "}
             </h1>
-            <p className="text-muted-foreground text-balance lg:text-lg">
+            <p className="text-muted-foreground lg:text-lg">
               Instantly calculate your personal income tax in Malta based on the
               latest tax brackets. Whether you&apos;re employed, self-employed,
               or a pensioner, our tool gives you a clear breakdown of what you
               owe.
             </p>
             <p className="text-muted-foreground text-balance lg:text-lg">
-              Try our calculators — no sign-in required.
+              Try our calculators —{" "}
+              <span className="text-foreground font-semibold">
+                no sign-in required.
+              </span>
             </p>
           </div>
-          <Button asChild size="lg" className="mt-5">
+          <Button asChild size="lg" className="mt-10">
             <a href="#">Try Now for Free</a>
           </Button>
-          <div className="mx-auto mt-10 flex w-fit flex-col items-center gap-4 sm:flex-row">
-            <span className="mx-4 inline-flex items-center -space-x-4">
-              {reviews.avatars.map((avatar, index) => (
-                <Avatar key={index} className="size-14 border">
-                  <AvatarImage src={avatar.src} alt={avatar.alt} />
-                </Avatar>
-              ))}
-            </span>
-            <div>
-              <div className="flex items-center gap-1">
-                {[...Array(5)].map((_, index) => (
-                  <Star
-                    key={index}
-                    className="size-5 fill-yellow-400 text-yellow-400"
-                  />
-                ))}
-                <span className="mr-1 font-semibold">
-                  {reviews.rating?.toFixed(1)}
-                </span>
-              </div>
-              <p className="text-muted-foreground text-left font-medium">
-                from {reviews.count}+ reviews
-              </p>
-            </div>
+          <div className="mt-10 grid grid-cols-1 p-2 sm:grid-cols-2 lg:grid-cols-4">
+            {features.map((feature, idx) => {
+              const isFirst = idx === 0;
+              const isLast = idx === features.length - 1;
+
+              return (
+                <div
+                  key={idx}
+                  className={`bg-secondary border p-6 transition-shadow hover:shadow-md ${isFirst ? "rounded-l-lg" : ""} ${isLast ? "rounded-r-lg" : ""} ${!isFirst && !isLast ? "rounded-none" : ""} border-r-0 last:border-r`}
+                >
+                  <div className="flex justify-around">
+                    <div>{feature.icon}</div>
+                    <h3 className="text-md mb-2 font-semibold">
+                      {feature.title}
+                    </h3>
+                  </div>
+                  <p className="text-muted-foreground text-sm">
+                    {feature.description}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
