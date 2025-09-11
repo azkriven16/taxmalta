@@ -134,7 +134,7 @@ const CardImage = ({
   const [hasError, setHasError] = useState(false);
 
   return (
-    <div className="relative overflow-hidden rounded-xl">
+    <div className="relative overflow-hidden">
       {/* Loading skeleton */}
       {isLoading && (
         <div className="aspect-[16/10] w-full animate-pulse bg-neutral-200 dark:bg-neutral-800" />
@@ -152,7 +152,7 @@ const CardImage = ({
         initial={{ scale: 1 }}
         whileHover={{ scale: 1.03 }}
         transition={{ duration: 0.3 }}
-        className="overflow-hidden rounded-xl"
+        className="overflow-hidden"
       >
         <Image
           width={400}

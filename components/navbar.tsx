@@ -1,4 +1,5 @@
 "use client";
+
 import {
   MobileNav,
   MobileNavHeader,
@@ -15,6 +16,10 @@ import { ModeToggle } from "./theme-toggle";
 
 export function NavbarDemo() {
   const navItems = [
+    {
+      name: "Home",
+      link: "/",
+    },
     {
       name: "Tax Returns",
       link: "#",
