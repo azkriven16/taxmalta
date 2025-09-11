@@ -25,8 +25,8 @@ export function NavbarDemo() {
       link: "#",
     },
     {
-      name: "Tax Advice",
-      link: "#",
+      name: "Calculators",
+      link: "/calculators",
     },
     {
       name: "Resources",

@@ -40,7 +40,7 @@ const freeCalculators = [
     title: "Capital Gains Tax Calculator",
     description:
       "Quickly know how much Capital Gains Tax you owe on your profits from property, shares, crypto, and more.",
-    link: "/calculator/late-tax-penalty-calculator",
+    link: "/calculators/late-tax-penalty-calculator",
     image:
       "https://images.unsplash.com/photo-1554224155-6726b3ff858f?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60",
   },
