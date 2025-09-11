@@ -1,18 +1,17 @@
 "use client";
 import {
+  MobileNav,
+  MobileNavHeader,
+  MobileNavMenu,
+  MobileNavToggle,
   Navbar,
+  NavbarButton,
+  NavbarLogo,
   NavBody,
   NavItems,
-  MobileNav,
-  NavbarLogo,
-  NavbarButton,
-  MobileNavHeader,
-  MobileNavToggle,
-  MobileNavMenu,
 } from "@/components/ui/resizable-navbar";
 import { useState } from "react";
-import { Moon, Sun } from "lucide-react";
-import { ModeToggle, ThemeToggleButton } from "./theme-toggle";
+import { ModeToggle } from "./theme-toggle";
 
 export function NavbarDemo() {
   const navItems = [
@@ -31,11 +30,6 @@ export function NavbarDemo() {
   ];
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
-  const toggleDarkMode = () => {
-    // Empty function as requested
-  };
 
   return (
     <Navbar className="fixed top-0 z-50 md:top-5">
@@ -55,18 +49,7 @@ export function NavbarDemo() {
         <MobileNavHeader>
           <NavbarLogo />
           <div className="flex items-center gap-2">
-            {/* Mobile Dark Mode Toggle */}
-            <button
-              onClick={toggleDarkMode}
-              className="rounded-lg p-2 transition-colors duration-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-              aria-label="Toggle dark mode"
-            >
-              {isDarkMode ? (
-                <Sun className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-              ) : (
-                <Moon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-              )}
-            </button>
+            <ModeToggle />
             <MobileNavToggle
               isOpen={isMobileMenuOpen}
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}

@@ -3,7 +3,7 @@ import { PropsWithChildren, useEffect, useState } from "react";
 import Noise from "./ui/noise";
 import { Toaster } from "./ui/sonner";
 import { ThemeProvider } from "next-themes";
-import { ScrollProgress } from "./ui/scroll-progress";
+// import { ScrollProgress } from "./ui/scroll-progress";
 
 export const Providers = ({ children }: PropsWithChildren) => {
   const [isMounted, setIsMounted] = useState(false);
@@ -25,7 +25,6 @@ export const Providers = ({ children }: PropsWithChildren) => {
           patternRefreshInterval={2}
           patternAlpha={15}
         />
-        <ScrollProgress />
         <Toaster />
       </ThemeProvider>
     </>
