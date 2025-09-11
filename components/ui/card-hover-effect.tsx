@@ -38,7 +38,7 @@ export const HoverEffect = ({
         >
           <a
             href={item.link}
-            className="group relative block h-full w-full rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            className="group relative block h-full w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
             onMouseEnter={() => setHoveredIndex(idx)}
             onMouseLeave={() => setHoveredIndex(null)}
             onFocus={() => setFocusedIndex(idx)}
@@ -49,7 +49,7 @@ export const HoverEffect = ({
             <AnimatePresence>
               {(hoveredIndex === idx || focusedIndex === idx) && (
                 <motion.div
-                  className="absolute -inset-2 rounded-3xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 dark:from-blue-400/20 dark:to-purple-400/20"
+                  className="absolute -inset-2 bg-gradient-to-r from-blue-500/10 to-purple-500/10 dark:from-blue-400/20 dark:to-purple-400/20"
                   layoutId="hoverBackground"
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{
@@ -110,7 +110,7 @@ const Card = ({
   return (
     <div
       className={cn(
-        "relative h-full w-full overflow-hidden rounded-2xl border border-neutral-200 bg-white p-6 shadow-md transition-all duration-200 group-hover:border-neutral-300 group-hover:shadow-lg dark:border-neutral-800 dark:bg-neutral-900 dark:group-hover:border-neutral-700",
+        "relative h-full w-full overflow-hidden border border-neutral-200 bg-white p-6 shadow-md transition-all duration-200 group-hover:border-neutral-300 group-hover:shadow-lg dark:border-neutral-800 dark:bg-neutral-900 dark:group-hover:border-neutral-700",
         className,
       )}
     >

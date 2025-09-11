@@ -55,7 +55,7 @@ export const FaqSection = () => {
             <AccordionItem
               key={question}
               value={`question-${index}`}
-              className="bg-accent rounded-xl border-none px-4 py-1"
+              className="bg-accent border-none px-4 py-1"
             >
               <AccordionTrigger
                 className={cn(

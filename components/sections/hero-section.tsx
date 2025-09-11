@@ -115,13 +115,10 @@ export function HeroSection() {
           </ShimmerButton>
           <div className="mt-10 grid max-w-7xl grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
             {features.map((feature, idx) => {
-              const isFirst = idx === 0;
-              const isLast = idx === features.length - 1;
-
               return (
                 <div
                   key={idx}
-                  className={`bg-secondary border p-6 transition-shadow hover:shadow-md ${isFirst ? "rounded-l-lg" : ""} ${isLast ? "rounded-r-lg" : ""} ${!isFirst && !isLast ? "rounded-none" : ""} border-r-0 last:border-r`}
+                  className={`bg-secondary border border-r-0 p-6 transition-shadow last:border-r hover:shadow-md`}
                 >
                   <div className="flex justify-around">
                     <div>{feature.icon}</div>
