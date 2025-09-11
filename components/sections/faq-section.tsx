@@ -36,8 +36,8 @@ const faq = [
 
 export const FaqSection = () => {
   return (
-    <div className="mx-auto flex max-w-7xl items-center justify-center">
-      <div className="w-full">
+    <div className="flex items-center justify-center">
+      <div className="w-full max-w-7xl">
         <h1 className="text-3xl font-extrabold lg:text-5xl">
           Frequently Asked Questions
         </h1>

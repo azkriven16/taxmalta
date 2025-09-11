@@ -72,7 +72,7 @@ export const Footer = ({
   ],
 }: Footer2Props) => {
   return (
-    <div className="bg-secondary mt-20 pt-20">
+    <div className="bg-secondary mt-20 lg:pt-20">
       <footer className="container mx-auto max-w-7xl space-y-20 p-4 pt-24 lg:p-8">
         <div className="grid grid-cols-2 gap-8 lg:grid-cols-6">
           <div className="col-span-2 mb-8 lg:mb-0">

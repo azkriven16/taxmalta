@@ -3,27 +3,29 @@ import { HoverEffect } from "../ui/card-hover-effect";
 
 export const CalculatorsSection = () => {
   return (
-    <section>
-      <div className="text-center text-balance">
+    <section className="mx-auto max-w-7xl">
+      <div>
         <h1 className="text-3xl font-extrabold lg:text-5xl">
-          Top of the Malta tax calculators
+          Most Popular Malta Tax Calculators
         </h1>
         <p className="text-muted-foreground mx-auto mt-5 lg:text-lg">
-          Try out the tax calculators that our users can’t get enough of. These
-          are the top 3 when it comes to tax calculations made super-simple.
+          Discover the top 3 tax calculators our users rely on the most. Simple,
+          accurate, and easy to use — these tools make handling tax in Malta a
+          breeze.
         </p>
       </div>
-      <div className="mx-auto max-w-7xl">
+      <div>
         <HoverEffect items={freeCalculators} />
       </div>
 
-      <div className="text-center text-balance">
+      <div>
         <h1 className="mt-10 text-3xl font-extrabold lg:text-5xl">
-          But don’t stop there
+          Explore More Tools
         </h1>
         <p className="text-muted-foreground mx-auto mt-5 lg:text-lg">
-          We’ve got a bunch more UK tax calculators and tools where those top 3
-          came from. Scroll through to see what we have to offer.
+          There’s plenty more where that came from. Browse our full range of
+          Malta tax calculators and tools — designed to help you make smarter
+          financial decisions.
         </p>
       </div>
       <div className="mx-auto max-w-7xl">
