@@ -927,10 +927,11 @@ export default function LateTaxPenaltyCalc() {
               <div className="bg-card rounded-2xl border p-6 shadow-lg md:p-8">
                 <div className="mb-6">
                   <h2 className="text-card-foreground text-xl font-semibold">
-                    Calculation Summary
+                    Your Tax Obligation
                   </h2>
                   <p className="text-muted-foreground text-sm">
-                    Based on Malta tax regulations
+                    Approximate amounts using Malta tax rules <br />
+                    Figures may change upon filing and MTCA assessment.
                   </p>
                 </div>
 
