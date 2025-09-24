@@ -48,7 +48,7 @@ const freeCalculators = [
     title: "National Insurance Calculator",
     description:
       "Quickly calculate how much you owe in National Insurance if you’re earning money from employment or self-employment.",
-    link: "#2",
+    link: "/calculators/notice-period-calculator",
     image:
       "https://images.unsplash.com/photo-1554224155-6726b3ff858f?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60",
   },
