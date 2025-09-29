@@ -333,9 +333,9 @@ export default function LateTaxPenaltyCalc() {
       if (f.taxpayerType === "Corporate" && !f.ddtExemption) return s;
       // Due date is auto-calculated, so we don't need to check for it
       s = 6;
-      if (!f.computeInterestAsOf) return s;
+      // Don't require computeInterestAsOf - make it optional
     }
-    return 7;
+    return 7; // Always reach step 7 if we get this far
   };
 
   const step = computeStep(form);
@@ -362,13 +362,25 @@ export default function LateTaxPenaltyCalc() {
       newForm.dueDate = "";
     }
 
-    // Auto-calculate due date when we have enough information
+    // Auto-calculate due date for individuals when tax year is set
+    if (
+      field === "taxYear" &&
+      newForm.taxpayerType === "Individual" &&
+      newForm.taxYear
+    ) {
+      const taxYearNum = parseInt(newForm.taxYear);
+      const paymentDeadline = new Date(taxYearNum + 1, 5, 30); // June 30th following year
+      newForm.dueDate = paymentDeadline.toISOString().split("T")[0];
+    }
+
+    // Auto-calculate due date when we have enough information for corporates
     if (
       (field === "ddtExemption" ||
         field === "taxYear" ||
         field === "yearEnd") &&
       newForm.taxYear &&
       newForm.yearEnd &&
+      newForm.taxpayerType === "Corporate" &&
       newForm.outstandingTax === "Yes"
     ) {
       const calculatedDueDate = calculateTaxPaymentDeadline(newForm);
@@ -493,6 +505,7 @@ export default function LateTaxPenaltyCalc() {
     if (isNaN(taxAmount) || taxAmount <= 0) return { total: 0, breakdown: [] };
 
     const dueDate = new Date(form.dueDate);
+    // Use provided date or default to today
     const computeDate = form.computeInterestAsOf
       ? new Date(form.computeInterestAsOf)
       : new Date();
@@ -901,19 +914,19 @@ export default function LateTaxPenaltyCalc() {
                       className="space-y-3"
                     >
                       <Label className="text-card-foreground text-sm font-medium">
-                        Planning to settle later?
+                        When do you plan to settle? (optional)
                       </Label>
                       <DatePicker
                         value={form.computeInterestAsOf}
                         onChange={(value) =>
                           handleChange("computeInterestAsOf", value)
                         }
-                        placeholder="Select computation date (defaults to today)"
+                        placeholder="Select date (defaults to today)"
                         hasError={!!errors.computeInterestAsOf}
                       />
                       <p className="text-muted-foreground text-xs">
-                        If no date is selected, calculations will be made as of
-                        today&apos;s date.
+                        Leave blank to calculate interest up to today&apos;s
+                        date.
                       </p>
                     </motion.div>
                   )}
@@ -1073,7 +1086,7 @@ export default function LateTaxPenaltyCalc() {
                               {item.period}
                             </span>
                             <p className="text-muted-foreground text-xs">
-                              {item.days} days
+                              {Math.round(item.days / 30.44)} months
                             </p>
                           </div>
                           <span className="text-card-foreground font-semibold">
