@@ -115,10 +115,11 @@ export default function RentalIncomeCalculator() {
           </h1>
           <p className="text-muted-foreground leading-relaxed text-pretty">
             The calculation below is for passive rental income. If renting is
-            done as a business, it's taxed differently, and business expenses
-            can be deducted. To know which applies, we look at how the rental is
-            run. Usually, short-term rentals like hotel stays are treated as
-            business income, while long-term rentals are considered passive.
+            done as a business, it&apos;s taxed differently, and business
+            expenses can be deducted. To know which applies, we look at how the
+            rental is run. Usually, short-term rentals like hotel stays are
+            treated as business income, while long-term rentals are considered
+            passive.
           </p>
         </div>
 
@@ -308,15 +309,17 @@ export default function RentalIncomeCalculator() {
                   <div className="space-y-3 text-base leading-relaxed">
                     <p>
                       You can choose to pay a flat 15% tax on your total rental
-                      income if the property qualifies as a "tenement." This
-                      includes:
+                      income if the property qualifies as a &quot;tenement.
+                      &quot; This includes:
                     </p>
                     <ol className="ml-6 list-decimal space-y-2">
-                      <li>Homes or garages (used as someone's residence).</li>
                       <li>
-                        Commercial properties, as long as they're not rented to
-                        or from a related company or person (related means
-                        owning or controlling more than 25%).
+                        Homes or garages (used as someone&apos;s residence).
+                      </li>
+                      <li>
+                        Commercial properties, as long as they&apos;re not
+                        rented to or from a related company or person (related
+                        means owning or controlling more than 25%).
                       </li>
                     </ol>
                   </div>
