@@ -32,8 +32,8 @@ export function HeroSection() {
             <div className="text-3xl leading-tight font-extrabold lg:text-6xl">
               <Highlighter
                 action="crossed-off"
-                padding={4}
-                multiline={true}
+                padding={1}
+                multiline={false}
                 color="red"
                 className="text-foreground font-extrabold"
                 animationDuration={1500}
@@ -45,7 +45,7 @@ export function HeroSection() {
                   className="inline-block"
                   delay={0}
                 >
-                  No More
+                  Stop Guessing
                 </TextEffect>
               </Highlighter>{" "}
               <TextEffect
@@ -55,7 +55,7 @@ export function HeroSection() {
                 className="inline-block"
                 delay={0.25}
               >
-                Guessing Your Tax 🤔
+                🤔 Your Taxes
               </TextEffect>
               <br />
               <TextEffect
@@ -65,7 +65,7 @@ export function HeroSection() {
                 className="inline-block"
                 delay={0.5}
               >
-                — Use Our
+                — Calculate
               </TextEffect>{" "}
               <Highlighter
                 action="underline"
@@ -82,7 +82,7 @@ export function HeroSection() {
                   className="inline-block"
                   delay={0.75}
                 >
-                  Free Malta Calculator
+                  Instantly!
                 </TextEffect>
               </Highlighter>{" "}
             </div>
@@ -94,10 +94,10 @@ export function HeroSection() {
               as="p"
               className="text-muted-foreground lg:text-lg"
             >
-              Instantly calculate your personal income tax in Malta based on the
-              latest tax brackets. Whether you&apos;re employed, self-employed,
-              or a pensioner, our tool gives you a clear breakdown of what you
-              owe.
+              Get an accurate estimate of your Malta taxes, including interest
+              and penalties, with our free calculators. Whether you’re an
+              individual or a corporation, our tool provides a clear, detailed
+              breakdown of all applicable taxes in just a few clicks.
             </TextEffect>
 
             <p className="text-muted-foreground text-balance lg:text-lg">
@@ -154,9 +154,9 @@ const features = [
   },
   {
     icon: <FaCoins className="text-2xl text-yellow-400" />,
-    title: "Supports Multiple Income Types",
+    title: "Supports Multiple Tax Scenarios",
     description:
-      "Handles employment, self-employment, rental, and foreign income with ease.",
+      "Handles employment, corporate tax, rental, tax interest and penalties with ease.",
   },
   {
     icon: <FaUserCheck className="text-2xl text-purple-400" />,

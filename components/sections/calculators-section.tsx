@@ -37,26 +37,26 @@ export const CalculatorsSection = () => {
 
 const freeCalculators = [
   {
-    title: "Capital Gains Tax Calculator",
+    title: "Salary Tax Calculator",
     description:
-      "Quickly know how much Capital Gains Tax you owe on your profits from property, shares, crypto, and more.",
+      "Effortlessly find out how much tax and social security will be deducted from your salary.",
     link: "/calculators/late-tax-penalty-calculator",
     image:
       "https://images.unsplash.com/photo-1554224155-6726b3ff858f?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60",
   },
   {
-    title: "National Insurance Calculator",
+    title: "Income Tax Interest and Penalty Calculator",
     description:
-      "Quickly calculate how much you owe in National Insurance if you’re earning money from employment or self-employment.",
+      "Easily calculate any interest and penalties on overdue income taxes. Our tool gives you a quick, accurate breakdown so you know exactly what you owe to avoid surprises.",
     link: "/calculators/notice-period-calculator",
     image:
       "https://images.unsplash.com/photo-1554224155-6726b3ff858f?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60",
   },
   {
-    title: "Employed and Self-Employed Tax Calculator",
+    title: "Rental Tax Calculator",
     description:
-      "Quickly calculate how much Income Tax and National Insurance you owe on your earnings if you’re both employed and self-employed.",
-    link: "#3",
+      "Quickly calculate the tax on your rental income under Malta’s latest rules. Our tool compares the best tax treatment to help you choose the most cost-effective option.",
+    link: "/calculators/rental-income-tax-calculator",
     image:
       "https://plus.unsplash.com/premium_photo-1661311947753-065ef4af9087?q=80&w=1332&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
   },
@@ -64,67 +64,51 @@ const freeCalculators = [
 
 const moreCalculators = [
   {
-    title: "Capital Gains Tax Calculator",
+    title: "Corporate Tax Calculator",
     description:
-      "Quickly know how much Capital Gains Tax you owe on your profits from property, shares, crypto, and more.",
+      "Effortlessly find out how much tax and social security will be deducted from your salary.",
     link: "/calculator/late-tax-penalty-calculator",
     image:
       "https://images.unsplash.com/photo-1554224155-6726b3ff858f?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60",
   },
   {
-    title: "National Insurance Calculator",
+    title: "Audit Exemption Calculator",
     description:
-      "Quickly calculate how much you owe in National Insurance if you’re earning money from employment or self-employment.",
+      "Effortlessly find out how much tax and social security will be deducted from your salary.",
     link: "#2",
     image:
       "https://images.unsplash.com/photo-1554224155-6726b3ff858f?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60",
   },
   {
-    title: "Employed and Self-Employed Tax Calculator",
+    title: "Notice Period Calculator",
     description:
-      "Quickly calculate how much Income Tax and National Insurance you owe on your earnings if you’re both employed and self-employed.",
+      "Effortlessly find out how much tax and social security will be deducted from your salary.",
     link: "#3",
     image:
       "https://plus.unsplash.com/premium_photo-1661311947753-065ef4af9087?q=80&w=1332&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
   },
   {
-    title: "Salary After Tax Calculator",
+    title: "Capital Gains Calculator",
     description:
-      "Quickly calculate your take home pay and know how much you pay in taxes.",
+      "Thinking of selling shares you own in a company? Effortlessly calculate the tax on your capital gains under Malta’s capital gains rules.",
     link: "#4",
     image:
       "https://images.unsplash.com/photo-1561414927-6d86591d0c4f?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60",
   },
   {
-    title: "UK Income Tax Calculator",
+    title: "Stamp Duty Calculator",
     description:
-      "Quickly calculate how much tax you need to pay on your income.",
+      "Thinking of buying shares in a company? Quickly find out how much stamp duty you will have to pay based on the Duty on Documents and Transfers Act.",
     link: "#5",
     image:
       "https://images.unsplash.com/photo-1561414927-6d86591d0c4f?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60",
   },
   {
-    title: "Pension Tax Relief Calculator",
+    title: "Notional Interest Calculator",
     description:
-      "Calculate how much tax relief your pension provider should get you and see how much additional tax relief you can claim from HMRC.",
+      "Calculate your notional interest deduction under Malta’s tax rules with ease. Our tool helps you determine the allowable deduction on equity contributions allowing you to optimise your tax benefits.",
     link: "#6",
     image:
       "https://plus.unsplash.com/premium_photo-1661311947753-065ef4af9087?q=80&w=1332&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-  },
-  {
-    title: "Child Benefit Calculator",
-    description:
-      "Quickly calculate how much Child Benefit you’re entitled to, how much you can receive, and if you need to pay any of it back as tax.",
-    link: "#7",
-    image:
-      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60",
-  },
-  {
-    title: "Late Tax Return Penalty Calculator",
-    description:
-      "Still haven’t submitted your Self Assessment tax return? Quickly calculate how much you can expect to pay in late penalties and interest.",
-    link: "#8",
-    image:
-      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60",
   },
 ];

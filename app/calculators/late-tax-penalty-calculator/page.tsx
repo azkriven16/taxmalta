@@ -1,5 +1,5 @@
 "use client";
-import LateTaxPenaltyCalc from "@/components/calculators/penalties-and-interests-calculator";
+import LateTaxPenaltyCalc from "@/app/calculators/late-tax-penalty-calculator/_components/late-tax-penalty-calculator";
 import { FeaturesSection } from "@/components/sections/how-to-use-section";
 import {
   Breadcrumb,
@@ -30,7 +30,6 @@ export default function Page() {
         </Breadcrumb>
         <LateTaxPenaltyCalc />
       </section>
-      <FeaturesSection />
     </main>
   );
 }

@@ -21,15 +21,11 @@ export function NavbarDemo() {
       link: "/",
     },
     {
-      name: "Tax Returns",
-      link: "#",
-    },
-    {
       name: "Calculators",
       link: "/calculators",
     },
     {
-      name: "Resources",
+      name: "Blogs",
       link: "#",
     },
   ];
@@ -43,7 +39,6 @@ export function NavbarDemo() {
         <NavbarLogo />
         <NavItems items={navItems} />
         <div className="flex items-center gap-4">
-          <NavbarButton variant="secondary">Login</NavbarButton>
           <NavbarButton variant="primary">Get Started</NavbarButton>
           <ModeToggle />
         </div>

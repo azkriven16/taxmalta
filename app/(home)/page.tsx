@@ -9,9 +9,9 @@ export default function Page() {
     <main className="container mx-auto flex flex-col gap-20 p-4 pt-24 lg:gap-36 lg:p-8">
       <HeroSection />
       <CalculatorsSection />
-      <FeaturesSection />
+      {/* <FeaturesSection /> */}
       <FaqSection />
-      <StatsSection />
+      {/* <StatsSection /> */}
     </main>
   );
 }

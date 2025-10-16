@@ -1,5 +1,4 @@
 "use client";
-import NoticePeriodCalculator from "@/app/calculators/notice-period-calculator/_components/notice-period-calculator";
 import { FeaturesSection } from "@/components/sections/how-to-use-section";
 import {
   Breadcrumb,
@@ -9,6 +8,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import RentalIncomeTaxCalculator from "./_components/rental-income-tax-calculator";
 export default function Page() {
   return (
     <main className="container mx-auto flex flex-col gap-20 p-4 pt-24 lg:gap-36 lg:p-8 lg:pt-40">
@@ -28,7 +28,7 @@ export default function Page() {
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-        <NoticePeriodCalculator />
+        <RentalIncomeTaxCalculator />
       </section>
     </main>
   );
