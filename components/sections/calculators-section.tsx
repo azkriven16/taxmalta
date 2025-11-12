@@ -37,7 +37,7 @@ export const CalculatorsSection = () => {
 
 const freeCalculators = [
   {
-    title: "Salary Tax Calculator",
+    title: "Late Tax Penalty Calculator",
     description:
       "Effortlessly find out how much tax and social security will be deducted from your salary.",
     link: "/calculators/late-tax-penalty-calculator",
@@ -45,7 +45,7 @@ const freeCalculators = [
       "https://images.unsplash.com/photo-1554224155-6726b3ff858f?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60",
   },
   {
-    title: "Income Tax Interest and Penalty Calculator",
+    title: "Notice Period Calculator",
     description:
       "Easily calculate any interest and penalties on overdue income taxes. Our tool gives you a quick, accurate breakdown so you know exactly what you owe to avoid surprises.",
     link: "/calculators/notice-period-calculator",
@@ -53,10 +53,18 @@ const freeCalculators = [
       "https://images.unsplash.com/photo-1554224155-6726b3ff858f?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60",
   },
   {
-    title: "Rental Tax Calculator",
+    title: "Rental Income Tax Calculator",
     description:
       "Quickly calculate the tax on your rental income under Malta’s latest rules. Our tool compares the best tax treatment to help you choose the most cost-effective option.",
     link: "/calculators/rental-income-tax-calculator",
+    image:
+      "https://plus.unsplash.com/premium_photo-1661311947753-065ef4af9087?q=80&w=1332&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+  },
+  {
+    title: "Audit Exemption Calculator",
+    description:
+      "Quickly calculate the tax on your rental income under Malta’s latest rules. Our tool compares the best tax treatment to help you choose the most cost-effective option.",
+    link: "/calculators/audit-exemption-calculator",
     image:
       "https://plus.unsplash.com/premium_photo-1661311947753-065ef4af9087?q=80&w=1332&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
   },

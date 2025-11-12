@@ -106,8 +106,8 @@ export default function RentalIncomeCalculator() {
   };
 
   return (
-    <div className="bg-background min-h-screen p-4 md:p-8">
-      <div className="mx-auto max-w-5xl space-y-6">
+    <div className="bg-background min-h-screen">
+      <div className="mx-auto space-y-6">
         {/* Header */}
         <div className="space-y-2">
           <h1 className="text-3xl font-bold tracking-tight text-balance md:text-4xl">

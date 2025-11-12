@@ -101,9 +101,9 @@ function addDays(d: Date, days: number): Date {
   return out;
 }
 
-function addWeeks(d: Date, weeks: number): Date {
-  return addDays(d, weeks * 7);
-}
+// function addWeeks(d: Date, weeks: number): Date {
+//   return addDays(d, weeks * 7);
+// }
 
 // More accurate month calculation for employment service
 function calculateServicePeriod(
