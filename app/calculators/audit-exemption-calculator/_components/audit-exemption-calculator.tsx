@@ -1,5 +1,4 @@
 "use client";
-
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -77,21 +76,19 @@ export default function AuditExemptionCalculator() {
   const incorporationYr = form.incorporationYear
     ? Number(form.incorporationYear)
     : 0;
-  const isPost2024 = incorporationYr >= 2024 && incorporationYr <= 2026;
+  const isPost2024 = incorporationYr >= 2024;
 
   const determineQualifyPath = (): string => {
     if (form.isMerchantShipping === "Yes") return "";
 
     if (isPost2024) {
       if (form.firstQuestion === "Yes") return "RULE_3";
-
       if (
         form.firstQuestion === "No" &&
         form.isMerchantShipping === "No" &&
         form.secondQuestion === "No"
       )
         return "RULE_6";
-
       if (
         form.firstQuestion === "No" &&
         form.isMerchantShipping === "No" &&
@@ -99,7 +96,6 @@ export default function AuditExemptionCalculator() {
         form.isArticle174Exempt === "No"
       )
         return "SMALL_GROUP";
-
       if (
         form.firstQuestion === "No" &&
         form.isMerchantShipping === "No" &&
@@ -111,16 +107,15 @@ export default function AuditExemptionCalculator() {
 
     if (!isPost2024) {
       if (form.firstQuestion === "Yes") {
-        if (form.secondQuestion === "No" && form.isArticle174Exempt === "")
-          return "SMALL_GROUP";
-        if (form.secondQuestion === "Yes" && form.isArticle174Exempt === "No")
-          return "SMALL_GROUP";
-        if (form.secondQuestion === "Yes" && form.isArticle174Exempt === "Yes")
-          return "RULE_6";
+        // Parent entity case for pre-2024
+        if (form.secondQuestion === "No") return "SMALL_GROUP";
+        if (form.secondQuestion === "Yes") {
+          if (form.isArticle174Exempt === "No") return "SMALL_GROUP";
+          if (form.isArticle174Exempt === "Yes") return "RULE_6";
+        }
       }
       if (form.firstQuestion === "No") return "RULE_6";
     }
-
     return "";
   };
 
@@ -131,6 +126,19 @@ export default function AuditExemptionCalculator() {
   };
 
   const getConclusion = (): ConclusionState => {
+    if (
+      !form.incorporationYear ||
+      isNaN(incorporationYr) ||
+      incorporationYr < 1900 ||
+      incorporationYr > new Date().getFullYear() + 1
+    ) {
+      return {
+        type: null,
+        message: "Please enter a valid incorporation year.",
+        details: "",
+      };
+    }
+
     if (form.isMerchantShipping === "Yes") {
       return {
         type: "MERCHANT_EXEMPT",
@@ -147,19 +155,25 @@ export default function AuditExemptionCalculator() {
       form.rule3WithinThreeYears &&
       form.rule3Turnover
     ) {
-      const count = countCriteria([
-        form.rule3Qualifications,
-        form.rule3WithinThreeYears,
-        form.rule3Turnover,
-      ]);
-      if (count === 3) {
+      if (
+        form.rule3Qualifications === "Yes" &&
+        form.rule3WithinThreeYears === "Yes" &&
+        form.rule3Turnover === "Yes"
+      ) {
         return {
           type: "STARTUP_EXEMPT",
           message:
             "The company satisfies all the criteria; therefore it is exempt from having to produce an auditor&apos;s report for its first two years.",
-          details: "",
+          details:
+            "Note: This exemption applies only if shareholding does not change. Any change in shareholding immediately revokes this exemption.",
         };
       }
+      return {
+        type: null,
+        message:
+          "Your company does not meet all Rule 3 criteria. Please check if you qualify under Rule 6.",
+        details: "",
+      };
     }
 
     if (
@@ -173,28 +187,39 @@ export default function AuditExemptionCalculator() {
         form.rule6Turnover,
         form.rule6Employees,
       ]);
-
       if (count === 3) {
         return {
           type: "SMALL_EXEMPT",
           message:
-            "The company meets all three criteria; therefore, neither an audit nor a review report is required as a tax requirement for the latest financial period.",
-          details: "",
+            "The company meets all three criteria for the last two consecutive years; therefore, neither an audit nor a review report is required as a tax requirement.",
+          details:
+            "This exemption applies only if thresholds continue to be met in future periods.",
         };
       }
+
       if (count === 2) {
         return {
           type: "REVIEW_REQUIRED",
           message:
-            "The company meets two out of the three criteria; therefore, a review report (a lighter form of assurance than an audit) will suffice for the latest financial accounting period.",
+            "The company meets two out of the three criteria for the last two consecutive years; therefore, a review report (a lighter form of assurance than an audit) will suffice.",
           details: "",
         };
       }
-      if (count <= 1) {
+
+      if (count === 1) {
         return {
           type: "AUDIT_REQUIRED",
           message:
-            "The company did not meet criteria for audit report exemption and a review report - an audit is required for the latest financial period.",
+            "The company meets only one criterion and does not qualify for exemption or review report only - an audit is required for the latest financial period.",
+          details: "",
+        };
+      }
+
+      if (count === 0) {
+        return {
+          type: "AUDIT_REQUIRED",
+          message:
+            "The company does not meet any of the small company criteria - an audit is required for the latest financial period.",
           details: "",
         };
       }
@@ -206,7 +231,6 @@ export default function AuditExemptionCalculator() {
         form.smallGroupTurnover,
         form.smallGroupEmployees,
       ]);
-
       if (smallGroupCount >= 2) {
         if (
           form.rule6SecondBalanceSheet &&
@@ -218,12 +242,11 @@ export default function AuditExemptionCalculator() {
             form.rule6SecondTurnover,
             form.rule6SecondEmployees,
           ]);
-
           if (rule6Count === 3) {
             return {
               type: "SMALL_EXEMPT",
               message:
-                "The company meets all three criteria; therefore, neither an audit nor a review report is required as a tax requirement for the latest financial accounting period.",
+                "Your group qualifies as a small group and the parent company meets all three Rule 6 criteria; therefore, neither an audit nor a review report is required.",
               details: "",
             };
           }
@@ -231,7 +254,7 @@ export default function AuditExemptionCalculator() {
             return {
               type: "REVIEW_REQUIRED",
               message:
-                "The company meets two out of the three criteria; therefore, a review report (a lighter form of assurance than an audit) will suffice for the latest financial accounting period.",
+                "Your group qualifies as a small group and the parent company meets two out of three Rule 6 criteria; therefore, a review report will suffice.",
               details: "",
             };
           }
@@ -239,7 +262,7 @@ export default function AuditExemptionCalculator() {
             return {
               type: "AUDIT_REQUIRED",
               message:
-                "The company did not meet criteria for audit report exemption and a review report - an audit is required for the latest financial period.",
+                "Although the group qualifies as small, the parent company does not meet sufficient Rule 6 criteria - an audit is required.",
               details: "",
             };
           }
@@ -248,7 +271,7 @@ export default function AuditExemptionCalculator() {
         return {
           type: "AUDIT_REQUIRED",
           message:
-            "The group did not meet small group criteria - an audit is required for the latest financial period.",
+            "Your group does not meet small group criteria (must meet 2 of 3 thresholds) - an audit is required.",
           details: "",
         };
       }
@@ -263,7 +286,6 @@ export default function AuditExemptionCalculator() {
 
   const handleChange = (field: keyof FormState, value: string): void => {
     const newForm = { ...form, [field]: value };
-
     if (field === "incorporationYear") {
       newForm.firstQuestion = "";
       newForm.isMerchantShipping = "";
@@ -318,6 +340,7 @@ export default function AuditExemptionCalculator() {
     form.smallGroupTurnover,
     form.smallGroupEmployees,
   ]);
+
   const shouldShowSmallGroupSecond =
     qualifyPath === "SMALL_GROUP" && smallGroupCount >= 2;
 
@@ -340,12 +363,10 @@ export default function AuditExemptionCalculator() {
             <h2 className="text-card-foreground mb-6 text-xl font-semibold">
               Your Tax Situation
             </h2>
-
             <div className="space-y-6">
-              {/* 1. Incorporation Year */}
               <div className="space-y-3">
                 <Label className="text-card-foreground text-sm font-medium">
-                  1. When was your company incorporated? (Year, e.g., 2023)
+                  When was your company incorporated? (Year, e.g., 2023)
                 </Label>
                 <Input
                   type="text"
@@ -361,7 +382,6 @@ export default function AuditExemptionCalculator() {
               <AnimatePresence>
                 {form.incorporationYear && (
                   <>
-                    {/* 2. First question – varies by year */}
                     <motion.div
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -369,7 +389,6 @@ export default function AuditExemptionCalculator() {
                       className="space-y-3"
                     >
                       <Label className="text-card-foreground text-sm font-medium">
-                        2.{" "}
                         {isPost2024
                           ? "Is your company exclusively owned by individuals?"
                           : "Is your company considered a Parent Entity or owns more than 50% of another company/ies?"}
@@ -394,7 +413,6 @@ export default function AuditExemptionCalculator() {
                       </RadioGroup>
                     </motion.div>
 
-                    {/* 3. Merchant Shipping */}
                     <motion.div
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -402,8 +420,8 @@ export default function AuditExemptionCalculator() {
                       className="space-y-3"
                     >
                       <Label className="text-card-foreground text-sm font-medium">
-                        3. Is your company registered under the Merchant
-                        Shipping Act?
+                        Is your company registered under the Merchant Shipping
+                        Act?
                       </Label>
                       <RadioGroup
                         value={form.isMerchantShipping}
@@ -438,8 +456,8 @@ export default function AuditExemptionCalculator() {
                           className="space-y-3"
                         >
                           <Label className="text-card-foreground text-sm font-medium">
-                            4. Is your company considered a Parent Entity or
-                            owns more than 50% of another company/ies?
+                            Is your company considered a Parent Entity or owns
+                            more than 50% of another company/ies?
                           </Label>
                           <RadioGroup
                             value={form.secondQuestion}
@@ -464,6 +482,8 @@ export default function AuditExemptionCalculator() {
                         </motion.div>
                       )}
 
+                    {/* Fixed: Article 174 should not show for post-2024 when firstQuestion is "Yes"
+                         since firstQuestion="Yes" routes directly to RULE_3 */}
                     {isPost2024 &&
                       form.firstQuestion === "No" &&
                       form.secondQuestion === "Yes" &&
@@ -475,9 +495,8 @@ export default function AuditExemptionCalculator() {
                           className="space-y-3"
                         >
                           <Label className="text-card-foreground text-sm font-medium">
-                            5. Is your company exempt from preparing
-                            consolidated accounts under Article 174 of the
-                            Companies Act?
+                            Is your company exempt from preparing consolidated
+                            accounts under Article 174 of the Companies Act?
                           </Label>
                           <RadioGroup
                             value={form.isArticle174Exempt}
@@ -511,7 +530,9 @@ export default function AuditExemptionCalculator() {
                     {/* Pre-2024 Article 174 */}
                     {!isPost2024 &&
                       form.firstQuestion === "Yes" &&
-                      form.isMerchantShipping === "No" && (
+                      form.isMerchantShipping === "No" &&
+                      (form.secondQuestion === "Yes" ||
+                        form.secondQuestion === "") && (
                         <motion.div
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -519,9 +540,8 @@ export default function AuditExemptionCalculator() {
                           className="space-y-3"
                         >
                           <Label className="text-card-foreground text-sm font-medium">
-                            5. Is your company exempt from preparing
-                            consolidated accounts under Article 174 of the
-                            Companies Act?
+                            Is your company exempt from preparing consolidated
+                            accounts under Article 174 of the Companies Act?
                           </Label>
                           <RadioGroup
                             value={form.isArticle174Exempt}
@@ -552,6 +572,48 @@ export default function AuditExemptionCalculator() {
                         </motion.div>
                       )}
 
+                    {!isPost2024 &&
+                      form.firstQuestion === "No" &&
+                      form.isMerchantShipping === "No" && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className="space-y-3"
+                        >
+                          <Label className="text-card-foreground text-sm font-medium">
+                            Is your company considered a Parent Entity or owns
+                            more than 50% of another company/ies?
+                          </Label>
+                          <RadioGroup
+                            value={form.secondQuestion}
+                            onValueChange={(v) =>
+                              handleChange("secondQuestion", v)
+                            }
+                            className="flex gap-6"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="Yes" id="q4PreYes" />
+                              <Label
+                                htmlFor="q4PreYes"
+                                className="cursor-pointer"
+                              >
+                                Yes
+                              </Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="No" id="q4PreNo" />
+                              <Label
+                                htmlFor="q4PreNo"
+                                className="cursor-pointer"
+                              >
+                                No
+                              </Label>
+                            </div>
+                          </RadioGroup>
+                        </motion.div>
+                      )}
+
                     {/* ==== RULE 3 ==== */}
                     {qualifyPath === "RULE_3" && (
                       <>
@@ -562,12 +624,11 @@ export default function AuditExemptionCalculator() {
                           className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950"
                         >
                           <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
-                            6. Let&apos;s check whether you will qualify under
-                            Rule 3 – Startups led by qualified individuals
+                            Let&apos;s check whether you will qualify under Rule
+                            3 – Startups led by qualified individuals
                           </p>
                         </motion.div>
 
-                        {/* Financial year end */}
                         <motion.div
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -575,7 +636,7 @@ export default function AuditExemptionCalculator() {
                           className="space-y-3"
                         >
                           <Label className="text-card-foreground text-sm font-medium">
-                            7. When is your first financial year-end? (Month and
+                            When is your first financial year-end? (Month and
                             Year, e.g., December 2024)
                           </Label>
                           <Input
@@ -592,7 +653,6 @@ export default function AuditExemptionCalculator() {
                           />
                         </motion.div>
 
-                        {/* Qualifications */}
                         <motion.div
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -600,8 +660,8 @@ export default function AuditExemptionCalculator() {
                           className="space-y-3"
                         >
                           <Label className="text-card-foreground text-sm font-medium">
-                            8. Do all shareholders hold educational
-                            qualifications at MQF Level 3 or higher?
+                            Do all shareholders hold educational qualifications
+                            at MQF Level 3 or higher?
                           </Label>
                           <RadioGroup
                             value={form.rule3Qualifications}
@@ -631,7 +691,6 @@ export default function AuditExemptionCalculator() {
                           </RadioGroup>
                         </motion.div>
 
-                        {/* Within 3 years */}
                         <motion.div
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -639,8 +698,8 @@ export default function AuditExemptionCalculator() {
                           className="space-y-3"
                         >
                           <Label className="text-card-foreground text-sm font-medium">
-                            9. Was your company established within three years
-                            of shareholders obtaining their qualifications?
+                            Was your company established within three years of
+                            shareholders obtaining their qualifications?
                           </Label>
                           <RadioGroup
                             value={form.rule3WithinThreeYears}
@@ -670,7 +729,6 @@ export default function AuditExemptionCalculator() {
                           </RadioGroup>
                         </motion.div>
 
-                        {/* Turnover */}
                         <motion.div
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -678,10 +736,14 @@ export default function AuditExemptionCalculator() {
                           className="space-y-3"
                         >
                           <Label className="text-card-foreground text-sm font-medium">
-                            10. Did your company&apos;s annual turnover not
-                            exceed €80,000 (or proportionate if less than 12
-                            months)?
+                            Did your company&apos;s annual turnover not exceed
+                            €80,000 (or proportionate if less than 12 months)?
                           </Label>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">
+                            Tip: If your first financial year is less than 12
+                            months, calculate the proportionate limit as:
+                            (€80,000 / 12) × number of months
+                          </p>
                           <RadioGroup
                             value={form.rule3Turnover}
                             onValueChange={(v) =>
@@ -723,7 +785,7 @@ export default function AuditExemptionCalculator() {
                             className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950"
                           >
                             <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
-                              6. Let&apos;s check whether you will qualify under
+                              Let&apos;s check whether you will qualify under
                               Rule 6 – Small companies
                             </p>
                           </motion.div>
@@ -735,13 +797,12 @@ export default function AuditExemptionCalculator() {
                             className="space-y-3"
                           >
                             <Label className="text-card-foreground text-sm font-medium">
-                              7. Does your company meet the following thresholds
+                              Does your company meet the following thresholds
                               under Article 185(2) of the Companies Act for two
                               consecutive years:
                             </Label>
                           </motion.div>
 
-                          {/* Balance sheet */}
                           <motion.div
                             initial={{ opacity: 0, y: -10 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -749,9 +810,15 @@ export default function AuditExemptionCalculator() {
                             className="space-y-3"
                           >
                             <Label className="text-card-foreground text-sm font-medium">
-                              8. Was your company&apos;s balance sheet total
-                              equal or less than €46,600?
+                              Was your company&apos;s balance sheet total equal
+                              or less than €46,600 for the last two (2)
+                              consecutive years?
                             </Label>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">
+                              Important: Both the current year AND the prior
+                              year must meet this threshold for the exemption to
+                              apply.
+                            </p>
                             <RadioGroup
                               value={form.rule6BalanceSheet}
                               onValueChange={(v) =>
@@ -780,7 +847,6 @@ export default function AuditExemptionCalculator() {
                             </RadioGroup>
                           </motion.div>
 
-                          {/* Turnover */}
                           <motion.div
                             initial={{ opacity: 0, y: -10 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -788,9 +854,14 @@ export default function AuditExemptionCalculator() {
                             className="space-y-3"
                           >
                             <Label className="text-card-foreground text-sm font-medium">
-                              9. Was your company&apos;s annual turnover equal
-                              or less than €93,000?
+                              Was your company&apos;s annual turnover/revenue
+                              equal or less than €93,000 for the last two (2)
+                              consecutive years?
                             </Label>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">
+                              Important: Both the current year AND the prior
+                              year must meet this threshold.
+                            </p>
                             <RadioGroup
                               value={form.rule6Turnover}
                               onValueChange={(v) =>
@@ -819,7 +890,6 @@ export default function AuditExemptionCalculator() {
                             </RadioGroup>
                           </motion.div>
 
-                          {/* Employees */}
                           <motion.div
                             initial={{ opacity: 0, y: -10 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -827,9 +897,13 @@ export default function AuditExemptionCalculator() {
                             className="space-y-3"
                           >
                             <Label className="text-card-foreground text-sm font-medium">
-                              10. Was the average number of employees equal or
-                              less than two (2)?
+                              Was the average number of employees equal or less
+                              than two (2) for the last two (2) consecutive
+                              years?
                             </Label>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">
+                              Important: Both years must meet this threshold.
+                            </p>
                             <RadioGroup
                               value={form.rule6Employees}
                               onValueChange={(v) =>
@@ -870,8 +944,8 @@ export default function AuditExemptionCalculator() {
                           className="rounded-lg border border-purple-200 bg-purple-50 p-4 dark:border-purple-800 dark:bg-purple-950"
                         >
                           <p className="text-sm font-semibold text-purple-900 dark:text-purple-100">
-                            6. Let&apos;s check whether your Group qualifies as
-                            a Small Group
+                            Let&apos;s check whether your Group qualifies as a
+                            Small Group
                           </p>
                         </motion.div>
 
@@ -882,14 +956,13 @@ export default function AuditExemptionCalculator() {
                           className="space-y-3"
                         >
                           <Label className="text-card-foreground text-sm font-medium">
-                            7. Does your company form part of a group (parent
-                            and subsidiaries) that meets two or more of the
+                            Does your company form part of a group (parent and
+                            subsidiaries) that meets two or more of the
                             following criteria on a consolidated basis as of the
                             balance sheet date?
                           </Label>
                         </motion.div>
 
-                        {/* Balance sheet */}
                         <motion.div
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -897,8 +970,8 @@ export default function AuditExemptionCalculator() {
                           className="space-y-3"
                         >
                           <Label className="text-card-foreground text-sm font-medium">
-                            8. Was your Group&apos;s aggregate balance sheet
-                            total does not exceed €4,000,000 net or €4,800,000
+                            Was your Group&apos;s aggregate balance sheet total
+                            equal to or less than €4,000,000 net or €4,800,000
                             gross?
                           </Label>
                           <RadioGroup
@@ -929,7 +1002,6 @@ export default function AuditExemptionCalculator() {
                           </RadioGroup>
                         </motion.div>
 
-                        {/* Turnover */}
                         <motion.div
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -937,8 +1009,8 @@ export default function AuditExemptionCalculator() {
                           className="space-y-3"
                         >
                           <Label className="text-card-foreground text-sm font-medium">
-                            9. Was your Group&apos;s aggregate turnover does not
-                            exceed €8,000,000 net or €9,600,000 gross?
+                            Was your Group&apos;s aggregate turnover equal to or
+                            less than €8,000,000 net or €9,600,000 gross?
                           </Label>
                           <RadioGroup
                             value={form.smallGroupTurnover}
@@ -968,7 +1040,6 @@ export default function AuditExemptionCalculator() {
                           </RadioGroup>
                         </motion.div>
 
-                        {/* Employees */}
                         <motion.div
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -976,8 +1047,8 @@ export default function AuditExemptionCalculator() {
                           className="space-y-3"
                         >
                           <Label className="text-card-foreground text-sm font-medium">
-                            10. Was your group&apos;s aggregate number of
-                            employees does not exceed 50?
+                            Was your group&apos;s aggregate number of employees
+                            equal to or less than 50?
                           </Label>
                           <RadioGroup
                             value={form.smallGroupEmployees}
@@ -1017,8 +1088,8 @@ export default function AuditExemptionCalculator() {
                               className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950"
                             >
                               <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
-                                11. Now, let&apos;s check whether you will
-                                qualify under Rule 6 – Small companies
+                                Now, let&apos;s check whether you will qualify
+                                under Rule 6 – Small companies
                               </p>
                             </motion.div>
 
@@ -1029,13 +1100,12 @@ export default function AuditExemptionCalculator() {
                               className="space-y-3"
                             >
                               <Label className="text-card-foreground text-sm font-medium">
-                                12. Does your company meet the following
-                                thresholds under Article 185(2) of the Companies
-                                Act for two consecutive years:
+                                Does your company meet the following thresholds
+                                under Article 185(2) of the Companies Act for
+                                two consecutive years:
                               </Label>
                             </motion.div>
 
-                            {/* Balance sheet */}
                             <motion.div
                               initial={{ opacity: 0, y: -10 }}
                               animate={{ opacity: 1, y: 0 }}
@@ -1043,9 +1113,15 @@ export default function AuditExemptionCalculator() {
                               className="space-y-3"
                             >
                               <Label className="text-card-foreground text-sm font-medium">
-                                13. Was your company&apos;s balance sheet total
-                                equal or less than €46,600?
+                                Was your company&apos;s balance sheet total
+                                equal or less than €46,600 for the last two (2)
+                                consecutive years?
                               </Label>
+                              <p className="text-xs text-gray-600 dark:text-gray-400">
+                                Important: Both the current year AND the prior
+                                year must meet this threshold for the exemption
+                                to apply.
+                              </p>
                               <RadioGroup
                                 value={form.rule6SecondBalanceSheet}
                                 onValueChange={(v) =>
@@ -1074,7 +1150,6 @@ export default function AuditExemptionCalculator() {
                               </RadioGroup>
                             </motion.div>
 
-                            {/* Turnover */}
                             <motion.div
                               initial={{ opacity: 0, y: -10 }}
                               animate={{ opacity: 1, y: 0 }}
@@ -1082,9 +1157,14 @@ export default function AuditExemptionCalculator() {
                               className="space-y-3"
                             >
                               <Label className="text-card-foreground text-sm font-medium">
-                                14. Was your company&apos;s annual turnover
-                                equal or less than €93,000?
+                                Was your company&apos;s annual turnover/revenue
+                                equal or less than €93,000 for the last two (2)
+                                consecutive years?
                               </Label>
+                              <p className="text-xs text-gray-600 dark:text-gray-400">
+                                Important: Both the current year AND the prior
+                                year must meet this threshold.
+                              </p>
                               <RadioGroup
                                 value={form.rule6SecondTurnover}
                                 onValueChange={(v) =>
@@ -1113,7 +1193,6 @@ export default function AuditExemptionCalculator() {
                               </RadioGroup>
                             </motion.div>
 
-                            {/* Employees */}
                             <motion.div
                               initial={{ opacity: 0, y: -10 }}
                               animate={{ opacity: 1, y: 0 }}
@@ -1121,9 +1200,13 @@ export default function AuditExemptionCalculator() {
                               className="space-y-3"
                             >
                               <Label className="text-card-foreground text-sm font-medium">
-                                15. Was the average number of employees equal or
-                                less than two (2)?
+                                Was the average number of employees equal or
+                                less than two (2) for the last two (2)
+                                consecutive years?
                               </Label>
+                              <p className="text-xs text-gray-600 dark:text-gray-400">
+                                Important: Both years must meet this threshold.
+                              </p>
                               <RadioGroup
                                 value={form.rule6SecondEmployees}
                                 onValueChange={(v) =>
@@ -1169,7 +1252,6 @@ export default function AuditExemptionCalculator() {
               <h2 className="text-card-foreground mb-4 text-xl font-semibold">
                 Audit Obligations
               </h2>
-
               <div className="space-y-4">
                 {conclusion.type === "MERCHANT_EXEMPT" && (
                   <div className="rounded-xl border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950">
@@ -1183,7 +1265,6 @@ export default function AuditExemptionCalculator() {
                     )}
                   </div>
                 )}
-
                 {conclusion.type === "STARTUP_EXEMPT" && (
                   <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
                     <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
@@ -1191,7 +1272,6 @@ export default function AuditExemptionCalculator() {
                     </p>
                   </div>
                 )}
-
                 {conclusion.type === "SMALL_EXEMPT" && (
                   <div className="rounded-xl border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950">
                     <p className="text-sm font-semibold text-green-900 dark:text-green-100">
@@ -1199,7 +1279,6 @@ export default function AuditExemptionCalculator() {
                     </p>
                   </div>
                 )}
-
                 {conclusion.type === "REVIEW_REQUIRED" && (
                   <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-800 dark:bg-yellow-950">
                     <p className="text-sm font-semibold text-yellow-900 dark:text-yellow-100">
@@ -1207,7 +1286,6 @@ export default function AuditExemptionCalculator() {
                     </p>
                   </div>
                 )}
-
                 {conclusion.type === "AUDIT_REQUIRED" && (
                   <div className="rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950">
                     <p className="text-sm font-semibold text-red-900 dark:text-red-100">
@@ -1215,7 +1293,6 @@ export default function AuditExemptionCalculator() {
                     </p>
                   </div>
                 )}
-
                 {!conclusion.type && (
                   <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-950">
                     <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -1244,7 +1321,6 @@ export default function AuditExemptionCalculator() {
               </p>
             </AccordionContent>
           </AccordionItem>
-
           <AccordionItem value="article174">
             <AccordionTrigger className="text-lg font-semibold">
               Article 174 - Consolidated Accounts Exemption
@@ -1261,7 +1337,6 @@ export default function AuditExemptionCalculator() {
               </div>
             </AccordionContent>
           </AccordionItem>
-
           <AccordionItem value="rule3">
             <AccordionTrigger className="text-lg font-semibold">
               Rule 3 - Startups led by Qualified Individuals
@@ -1292,7 +1367,6 @@ export default function AuditExemptionCalculator() {
               </div>
             </AccordionContent>
           </AccordionItem>
-
           <AccordionItem value="rule6">
             <AccordionTrigger className="text-lg font-semibold">
               Rule 6 - Small Companies
@@ -1313,7 +1387,6 @@ export default function AuditExemptionCalculator() {
               </div>
             </AccordionContent>
           </AccordionItem>
-
           <AccordionItem value="smallgroup">
             <AccordionTrigger className="text-lg font-semibold">
               Small Groups
