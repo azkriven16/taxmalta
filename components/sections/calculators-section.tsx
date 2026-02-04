@@ -39,42 +39,58 @@ const freeCalculators = [
   {
     title: "Late Tax Penalty Calculator",
     description:
-      "Effortlessly find out how much tax and social security will be deducted from your salary.",
+      "Avoid unnecessary costs by accurately estimating interest and penalties on overdue taxes. Get a clear breakdown based on the latest Maltese tax regulations.",
     link: "/calculators/late-tax-penalty-calculator",
     image:
-      "https://images.unsplash.com/photo-1554224155-6726b3ff858f?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60",
+      "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=800&q=80",
   },
   {
     title: "Notice Period Calculator",
     description:
-      "Easily calculate any interest and penalties on overdue income taxes. Our tool gives you a quick, accurate breakdown so you know exactly what you owe to avoid surprises.",
+      "Calculate your required notice period and final working day based on your length of service. Essential for planning your next career move smoothly.",
     link: "/calculators/notice-period-calculator",
     image:
-      "https://images.unsplash.com/photo-1554224155-6726b3ff858f?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60",
+      "https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?auto=format&fit=crop&w=800&q=80",
   },
   {
     title: "Rental Income Tax Calculator",
     description:
-      "Quickly calculate the tax on your rental income under Malta’s latest rules. Our tool compares the best tax treatment to help you choose the most cost-effective option.",
+      "Compare the 15% flat rate against progressive tax rates to find the most cost-effective way to declare your rental earnings in Malta.",
     link: "/calculators/rental-income-tax-calculator",
     image:
-      "https://plus.unsplash.com/premium_photo-1661311947753-065ef4af9087?q=80&w=1332&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=800&q=80",
   },
   {
     title: "Audit Exemption Calculator",
     description:
-      "Quickly calculate the tax on your rental income under Malta’s latest rules. Our tool compares the best tax treatment to help you choose the most cost-effective option.",
+      "Check if your company meets the legal thresholds for an audit exemption. Simply enter your turnover, asset value, and employee count.",
     link: "/calculators/audit-exemption-calculator",
     image:
-      "https://plus.unsplash.com/premium_photo-1661311947753-065ef4af9087?q=80&w=1332&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=800&q=80",
   },
-   {
-    title: "Personal Income Tax Calculator",
+  // {
+  //   title: "Personal Income Tax Calculator",
+  //   description:
+  //     "Get an instant estimate of your net take-home pay. This tool factors in both income tax and social security deductions for a complete breakdown.",
+  //   link: "/calculators/personal-tax-calculator",
+  //   image:
+  //     "https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&w=800&q=80",
+  // },
+  {
+    title: "Personal Income Tax (Single)",
     description:
-      "Quickly calculate the tax on your rental income under Malta’s latest rules. Our tool compares the best tax treatment to help you choose the most cost-effective option.",
-    link: "/calculators/personal-tax-calculator",
+      "Specifically designed for individuals filing under the single tax status. View the exact tax bands and rates that apply to your gross income.",
+    link: "/calculators/personal-tax-calculator-without-children",
     image:
-      "https://plus.unsplash.com/premium_photo-1661311947753-065ef4af9087?q=80&w=1332&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "https://images.unsplash.com/photo-1512428559087-560fa5ceab42?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    title: "Personal Income Tax (Parent)",
+    description:
+      "Maximize your tax savings using parent-specific rates. Calculate your net income while accounting for the deductions available to parents.",
+    link: "/calculators/personal-tax-calculator-with-children",
+    image:
+      "https://images.unsplash.com/photo-1580519542036-c47de6196ba5?auto=format&fit=crop&w=800&q=80",
   },
 ];
 
