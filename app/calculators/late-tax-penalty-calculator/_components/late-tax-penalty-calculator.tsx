@@ -218,6 +218,13 @@ export default function LateTaxPenaltyCalc() {
     "December",
   ];
 
+  const formatNumberWithCommas = (value: number) => {
+    return value.toLocaleString("en-GB", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  };
+
   const isValidDate = (dateString: string): boolean => {
     if (!dateString) return false;
     const date = new Date(dateString);
@@ -226,10 +233,15 @@ export default function LateTaxPenaltyCalc() {
     );
   };
 
-  const isValidTaxYear = (year: string): boolean => {
+  const isValidTaxYear = (year: string, type: string): boolean => {
     const yearNum = Number.parseInt(year);
     const currentYear = new Date().getFullYear();
-    return yearNum >= 1999 && yearNum <= currentYear;
+
+    if (type === "Corporate") {
+      return yearNum >= 2007 && yearNum <= 2026;
+    } else {
+      return yearNum >= 1999 && yearNum <= currentYear;
+    }
   };
 
   const isValidAmount = (amount: string): boolean => {
@@ -242,11 +254,14 @@ export default function LateTaxPenaltyCalc() {
 
     switch (field) {
       case "taxYear":
-        if (value && !isValidTaxYear(value)) {
-          newErrors[field] =
-            "Please enter a valid tax year (1999-" +
-            new Date().getFullYear() +
-            ")";
+        if (value && !isValidTaxYear(value, form.taxpayerType)) {
+          if (form.taxpayerType === "Corporate") {
+            newErrors[field] =
+              "Corporate tax year must be between 2007 and 2026";
+          } else {
+            newErrors[field] =
+              `Please enter a valid tax year (1999-${new Date().getFullYear()})`;
+          }
         } else {
           delete newErrors[field];
         }
@@ -374,7 +389,8 @@ export default function LateTaxPenaltyCalc() {
     if (
       (field === "ddtExemption" ||
         field === "taxYear" ||
-        field === "yearEnd") &&
+        field === "yearEnd" ||
+        field === "outstandingTax") &&
       newForm.taxYear &&
       newForm.yearEnd &&
       newForm.taxpayerType === "Corporate" &&
@@ -390,6 +406,38 @@ export default function LateTaxPenaltyCalc() {
     validateField(field, value);
   };
 
+  const getCorporateDeadline = (
+    taxYearNum: number,
+    yearEndMonthIndex: number,
+  ): Date => {
+    const deadlineYear = taxYearNum + 1;
+
+    switch (yearEndMonthIndex) {
+      case 0: // Jan
+      case 1: // Feb
+      case 2: // Mar
+      case 3: // Apr
+      case 4: // May
+      case 5: // Jun
+        return new Date(deadlineYear, 2, 31);
+
+      case 6: // July -> 30 April
+        return new Date(deadlineYear, 3, 30);
+      case 7: // August -> 31 May
+        return new Date(deadlineYear, 4, 31);
+      case 8: // September -> 30 June
+        return new Date(deadlineYear, 5, 30);
+      case 9: // October -> 31 July
+        return new Date(deadlineYear, 6, 31);
+      case 10: // November -> 31 August
+        return new Date(deadlineYear, 7, 31);
+      case 11: // December -> 30 September
+        return new Date(deadlineYear, 8, 30);
+      default:
+        return new Date(deadlineYear, 2, 31);
+    }
+  };
+
   const calculateTaxPaymentDeadline = (
     formData: FormState = form,
   ): Date | null => {
@@ -398,23 +446,20 @@ export default function LateTaxPenaltyCalc() {
     const taxYearNum = Number.parseInt(formData.taxYear);
 
     if (formData.taxpayerType === "Individual") {
+      // UPDATED: June 30th (Month 5) of the following year
       return new Date(taxYearNum + 1, 5, 30);
     } else {
       const yearEndMonth = MONTHS.indexOf(formData.yearEnd);
       if (yearEndMonth === -1) return null;
 
-      let yearEndDate: Date;
-      if (yearEndMonth >= 0 && yearEndMonth <= 11) {
-        yearEndDate = getLastDayOfMonth(taxYearNum + 1, yearEndMonth);
+      if (formData.ddtExemption === "Yes") {
+        const yearEndDate = getLastDayOfMonth(taxYearNum, yearEndMonth);
+        const paymentDeadline = new Date(yearEndDate);
+        paymentDeadline.setMonth(paymentDeadline.getMonth() + 18);
+        return paymentDeadline;
+      } else {
+        return getCorporateDeadline(taxYearNum, yearEndMonth);
       }
-
-      if (!yearEndDate!) return null;
-
-      const monthsToAdd = formData.ddtExemption === "Yes" ? 18 : 9;
-      const paymentDeadline = new Date(yearEndDate);
-      paymentDeadline.setMonth(paymentDeadline.getMonth() + monthsToAdd);
-
-      return paymentDeadline;
     }
   };
 
@@ -424,20 +469,18 @@ export default function LateTaxPenaltyCalc() {
     const taxYearNum = Number.parseInt(form.taxYear);
 
     if (form.taxpayerType === "Individual") {
-      return new Date(taxYearNum + 1, 8, 30);
+      // UPDATED: Now 30th June (Month index 5) of the following year
+      return new Date(taxYearNum + 1, 5, 30);
     } else {
       const yearEndMonth = MONTHS.indexOf(form.yearEnd);
       if (yearEndMonth === -1) return null;
-
-      const yearEndDate = getLastDayOfMonth(taxYearNum + 1, yearEndMonth);
-      const filingDeadline = new Date(yearEndDate);
-      filingDeadline.setMonth(filingDeadline.getMonth() + 9);
-
-      return filingDeadline;
+      return getCorporateDeadline(taxYearNum, yearEndMonth);
     }
   };
 
   const calculatePenalty = (): number => {
+    if (form.taxpayerType === "Corporate" && form.taxYear === "2025") return 0;
+
     const schedule =
       form.taxpayerType === "Corporate"
         ? corporatePenaltySchedule
@@ -678,7 +721,7 @@ export default function LateTaxPenaltyCalc() {
                             : ""
                         }`}
                       />
-                      {errors.taxYear && (
+                      {errors.taxYear ? (
                         <div className="bg-destructive/10 border-destructive/20 flex items-center gap-2 rounded-md border p-3">
                           <div className="bg-destructive text-destructive-foreground flex h-4 w-4 items-center justify-center rounded-full text-xs">
                             !
@@ -687,6 +730,12 @@ export default function LateTaxPenaltyCalc() {
                             {errors.taxYear}
                           </p>
                         </div>
+                      ) : (
+                        <p className="text-muted-foreground text-xs">
+                          {form.taxpayerType === "Corporate"
+                            ? "Allowed tax years: 2007 - 2026"
+                            : `Allowed tax years: 1999 - ${new Date().getFullYear()}`}
+                        </p>
                       )}
                     </motion.div>
                   )}
@@ -946,11 +995,14 @@ export default function LateTaxPenaltyCalc() {
                         Late Submission Penalty
                       </span>
                       <p className="text-xs text-orange-700 dark:text-orange-300">
-                        Fixed penalty
+                        {form.taxpayerType === "Corporate" &&
+                        form.taxYear === "2025"
+                          ? "2025 Corporate Exemption Applied"
+                          : "Fixed penalty"}
                       </p>
                     </div>
                     <span className="text-lg font-semibold text-orange-900 dark:text-orange-100">
-                      €{penalty.toFixed(2)}
+                      €{formatNumberWithCommas(penalty)}
                     </span>
                   </div>
 
@@ -964,7 +1016,7 @@ export default function LateTaxPenaltyCalc() {
                       </p>
                     </div>
                     <span className="text-lg font-semibold text-red-900 dark:text-red-100">
-                      €{interest.toFixed(2)}
+                      €{formatNumberWithCommas(interest)}
                     </span>
                   </div>
 
@@ -1003,8 +1055,8 @@ export default function LateTaxPenaltyCalc() {
                       <span className="font-semibold">
                         DDT10 Exemption Applied:
                       </span>{" "}
-                      Tax payment deadline extended from 9 to 18 months after
-                      financial year-end.
+                      Tax payment deadline extended from standard due date to 18
+                      months after financial year-end.
                     </p>
                   </div>
                 )}
@@ -1067,7 +1119,7 @@ export default function LateTaxPenaltyCalc() {
                             </p>
                           </div>
                           <span className="text-card-foreground font-semibold">
-                            €{item.amount.toFixed(2)}
+                            €{formatNumberWithCommas(item.amount)}
                           </span>
                         </div>
                       ))}
