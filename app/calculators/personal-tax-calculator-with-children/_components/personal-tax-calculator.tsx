@@ -536,7 +536,7 @@ export default function MarriedParentTaxCalculator() {
                           handleChange("taxStatus", v as TaxStatusType)
                         }
                       >
-                        <SelectTrigger className="h-auto py-2 dark:bg-zinc-800 dark:text-white">
+                        <SelectTrigger className="h-auto w-full py-2 dark:bg-zinc-800 dark:text-white">
                           <SelectValue className="text-left whitespace-normal" />
                         </SelectTrigger>
                         <SelectContent className="dark:bg-zinc-800 dark:text-white">
@@ -570,7 +570,7 @@ export default function MarriedParentTaxCalculator() {
                         value={form.sscStatus}
                         onValueChange={(v) => handleChange("sscStatus", v)}
                       >
-                        <SelectTrigger className="h-auto py-2 dark:bg-zinc-800 dark:text-white">
+                        <SelectTrigger className="h-auto w-full py-2 dark:bg-zinc-800 dark:text-white">
                           <SelectValue className="text-left whitespace-normal" />
                         </SelectTrigger>
                         <SelectContent className="dark:bg-zinc-800 dark:text-white">

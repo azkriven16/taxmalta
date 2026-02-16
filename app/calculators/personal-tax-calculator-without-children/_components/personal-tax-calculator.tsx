@@ -79,8 +79,7 @@ export default function PersonalTaxCalculator() {
 
   const [errors, setErrors] = useState<ErrorState>({});
 
-  // Constants from spreadsheet logic
-  // 121.36 + 135.1 + 121.16 + 135.1 = 512.72
+  // Constants
   const GOV_BONUS = 512.72;
 
   const computeStep = (f: FormState): number => {
@@ -119,7 +118,7 @@ export default function PersonalTaxCalculator() {
     validateField(field, value);
   };
 
-  // Exact SSC Formula from Spreadsheet Logic
+  // Exact SSC Formula
   const calculateSSC = (annualGross: number) => {
     const weeklyGross = annualGross / 52;
 
@@ -128,12 +127,10 @@ export default function PersonalTaxCalculator() {
 
     // Student logic
     if (form.sscStatus === "Student (under 18 years old)") {
-      // 10% max 4.38
       const val = Math.min(weeklyGross * 0.1, 4.38);
       return { weekly: val, total: val * 52 };
     }
     if (form.sscStatus === "Student (18 years old and over)") {
-      // 10% max 7.94
       const val = Math.min(weeklyGross * 0.1, 7.94);
       return { weekly: val, total: val * 52 };
     }
@@ -141,7 +138,6 @@ export default function PersonalTaxCalculator() {
     // Employed logic
     let weeklySSC = 0;
     if (form.sscStatus === "Employed (under 18 years old)") {
-      // IF(H6<=221.78, 6.62, IF(H6<=544.28, H6*0.1, 54.43))
       if (weeklyGross <= 221.78) weeklySSC = 6.62;
       else if (weeklyGross <= 544.28) weeklySSC = weeklyGross * 0.1;
       else weeklySSC = 54.43;
@@ -149,13 +145,11 @@ export default function PersonalTaxCalculator() {
       form.sscStatus ===
       "Employed (18 years old and over, born on or before 31 Dec 1961)"
     ) {
-      // IF(H6<=221.78, 22.18, IF(H6<=451.91, H6*0.1, 45.19))
       if (weeklyGross <= 221.78) weeklySSC = 22.18;
       else if (weeklyGross <= 451.91) weeklySSC = weeklyGross * 0.1;
       else weeklySSC = 45.19;
     } else {
       // Employed (18 year old and over, born on or after 1 Jan 1962)
-      // IF(H6<=221.78, 22.18, IF(H6<=544.28, H6*0.1, 54.43))
       if (weeklyGross <= 221.78) weeklySSC = 22.18;
       else if (weeklyGross <= 544.28) weeklySSC = weeklyGross * 0.1;
       else weeklySSC = 54.43;
@@ -166,7 +160,6 @@ export default function PersonalTaxCalculator() {
 
   const calculateIncomeTax = (salary: number, partTime: number) => {
     // 1. Calculate Part-Time Tax (Flat Rate 10%)
-    // IF(C13="Employment", MIN(N(C7),10000)*0.1, IF(C13="Self Employment", MIN(N(C7),12000)*0.1, 0))
     let partTimeTax = 0;
     let excessPartTime = 0;
 
@@ -178,20 +171,12 @@ export default function PersonalTaxCalculator() {
     }
 
     // 2. Calculate Chargeable Income for Progressive Tax
-    // Logic: Gross Salary + Excess Part Time
-    // Note: Gov Bonus is technically taxable but usually handled in final Net calc in these sheets.
-    // Based on the prompt's massive Excel formula:
-    // (N(F8) + MAX(N(C7) - Threshold, 0)) where F8 is Gross.
-    const chargeableIncome = salary + excessPartTime;
+    // UPDATED LOGIC: Gross Salary + Excess Part Time + Government Bonus
+    const chargeableIncome = salary + excessPartTime + GOV_BONUS;
 
     let progressiveTax = 0;
 
     if (form.residencyStatus === "Non-Resident") {
-      // Non-Resident Rates (2008 onwards)
-      // 0-700: 0%
-      // 701-3100: 20% - 140
-      // 3101-7800: 30% - 450
-      // 7801+: 35% - 840
       if (chargeableIncome <= 700) progressiveTax = 0;
       else if (chargeableIncome <= 3100)
         progressiveTax = chargeableIncome * 0.2 - 140;
@@ -199,13 +184,8 @@ export default function PersonalTaxCalculator() {
         progressiveTax = chargeableIncome * 0.3 - 450;
       else progressiveTax = chargeableIncome * 0.35 - 840;
     } else {
-      // Resident Rates (New 2025 Formulas from logic dump)
+      // Resident Rates
       if (form.taxStatus === "Married") {
-        // "Married with no Child"
-        // <= 22500: 0
-        // <= 32000: 15% - 3375
-        // <= 60000: 25% - 6575
-        // > 60000: 35% - 12575
         if (chargeableIncome <= 22500) progressiveTax = 0;
         else if (chargeableIncome <= 32000)
           progressiveTax = chargeableIncome * 0.15 - 3375;
@@ -213,11 +193,7 @@ export default function PersonalTaxCalculator() {
           progressiveTax = chargeableIncome * 0.25 - 6575;
         else progressiveTax = chargeableIncome * 0.35 - 12575;
       } else {
-        // Single (Default)
-        // <= 17500: 0
-        // <= 26500: 15% - 2625
-        // <= 60000: 25% - 5275
-        // > 60000: 35% - 11275
+        // Single
         if (chargeableIncome <= 17500) progressiveTax = 0;
         else if (chargeableIncome <= 26500)
           progressiveTax = chargeableIncome * 0.15 - 2625;
@@ -238,20 +214,36 @@ export default function PersonalTaxCalculator() {
   };
 
   const calculate = (): TaxCalculation => {
+    // 1. Zero State Check
+    if (!form.grossSalary) {
+      return {
+        grossIncome: 0,
+        mainGross: 0,
+        partTimeGross: 0,
+        taxableIncome: 0,
+        incomeTax: 0,
+        mainTax: 0,
+        partTimeTax: 0,
+        ssc: 0,
+        sscWeekly: 0,
+        govBonus: 0,
+        netIncome: 0,
+      };
+    }
+
     const grossSalary = Number.parseFloat(form.grossSalary) || 0;
     const partTime = Number.parseFloat(form.partTimeIncome) || 0;
 
-    // Calculate SSC on Gross Salary (Standard for Malta)
     const { total: ssc, weekly: sscWeekly } = calculateSSC(grossSalary);
 
-    // Calculate Tax
     const { mainTax, partTimeTax, totalTax, chargeableIncome } =
       calculateIncomeTax(grossSalary, partTime);
 
     const totalGross = grossSalary + partTime;
 
-    // Net Formula from Spreadsheet: Gross - Tax - SSC + Gov Bonus
-    const netIncome = totalGross - totalTax - ssc + GOV_BONUS;
+    // Net Formula: (Gross + PartTime + Bonus) - Tax - SSC
+    // We add the bonus to the gross flow before subtracting outflows
+    const netIncome = totalGross + GOV_BONUS - totalTax - ssc;
 
     return {
       grossIncome: totalGross,
@@ -278,13 +270,13 @@ export default function PersonalTaxCalculator() {
             Personal Income Tax Calculator without Children
           </h1>
           <p className="text-sm text-gray-500 sm:text-base dark:text-gray-400">
-            For Individuals Without a Child (Basis Year 2025)
+            For Individuals Without a Child
           </p>
         </div>
 
-        {/* Top Section: Inputs and Net Income */}
+        {/* Main Grid Layout */}
         <div className="grid gap-8 lg:grid-cols-12">
-          {/* Input Form - Left Column */}
+          {/* LEFT COLUMN: Inputs */}
           <div className="space-y-6 lg:col-span-5">
             <Card className="border-black shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
               <CardHeader>
@@ -321,7 +313,9 @@ export default function PersonalTaxCalculator() {
                       animate={{ opacity: 1, height: "auto" }}
                       className="space-y-2"
                     >
-                      <Label>Part-time Income (€)</Label>
+                      <Label>
+                        Part-time Income eligible for Fixed Rate (€)
+                      </Label>
                       <CurrencyInput
                         type="number"
                         placeholder="0.00"
@@ -349,15 +343,13 @@ export default function PersonalTaxCalculator() {
                         value={form.partTimeType}
                         onValueChange={(v) => handleChange("partTimeType", v)}
                       >
-                        <SelectTrigger className="dark:bg-zinc-800 dark:text-white">
+                        <SelectTrigger className="w-full dark:bg-zinc-800 dark:text-white">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="dark:bg-zinc-800 dark:text-white">
-                          <SelectItem value="Employment">
-                            Employment (Max €10k)
-                          </SelectItem>
+                          <SelectItem value="Employment">Employment</SelectItem>
                           <SelectItem value="Self-Employment">
-                            Self-Employment (Max €12k)
+                            Self-Employment
                           </SelectItem>
                         </SelectContent>
                       </Select>
@@ -379,7 +371,7 @@ export default function PersonalTaxCalculator() {
                         value={form.taxStatus}
                         onValueChange={(v) => handleChange("taxStatus", v)}
                       >
-                        <SelectTrigger className="dark:bg-zinc-800 dark:text-white">
+                        <SelectTrigger className="w-full dark:bg-zinc-800 dark:text-white">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="dark:bg-zinc-800 dark:text-white">
@@ -407,7 +399,7 @@ export default function PersonalTaxCalculator() {
                           handleChange("residencyStatus", v)
                         }
                       >
-                        <SelectTrigger className="dark:bg-zinc-800 dark:text-white">
+                        <SelectTrigger className="w-full dark:bg-zinc-800 dark:text-white">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="dark:bg-zinc-800 dark:text-white">
@@ -433,7 +425,7 @@ export default function PersonalTaxCalculator() {
                         value={form.sscStatus}
                         onValueChange={(v) => handleChange("sscStatus", v)}
                       >
-                        <SelectTrigger className="dark:bg-zinc-800 dark:text-white">
+                        <SelectTrigger className="w-full dark:bg-zinc-800 dark:text-white">
                           <SelectValue className="truncate" />
                         </SelectTrigger>
                         <SelectContent className="dark:bg-zinc-800 dark:text-white">
@@ -464,10 +456,10 @@ export default function PersonalTaxCalculator() {
             </Card>
           </div>
 
-          {/* Results Panel - Right Column (Just Net Income now) */}
+          {/* RIGHT COLUMN: Results & Stats (Stacked) */}
           <div className="space-y-6 lg:col-span-7">
-            {/* Main Net Income Card */}
-            <Card className="h-full border-black bg-black text-white dark:border-white dark:bg-white dark:text-black">
+            {/* 1. Main Net Income Card */}
+            <Card className="border-black bg-black text-white dark:border-white dark:bg-white dark:text-black">
               <CardHeader className="pb-2">
                 <CardDescription className="text-gray-300 dark:text-gray-600">
                   Earnings after tax
@@ -493,105 +485,104 @@ export default function PersonalTaxCalculator() {
                 </div>
               </CardContent>
             </Card>
-          </div>
-        </div>
 
-        {/* Stats Table - Full Width Row */}
-        <div className="mt-8">
-          <Card className="overflow-hidden border-black shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-            <CardHeader className="border-b bg-gray-50 dark:border-zinc-800 dark:bg-zinc-800/50">
-              <CardTitle className="text-base font-semibold">
-                Tax Obligations Summary
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {/* Added overflow-x-auto for mobile scrolling */}
-              <div className="overflow-x-auto">
-                <Table className="min-w-[600px]">
-                  <TableHeader>
-                    <TableRow className="dark:border-zinc-800">
-                      <TableHead className="w-[40%] pl-6">
-                        Description
-                      </TableHead>
-                      <TableHead className="text-right">Yearly</TableHead>
-                      <TableHead className="text-right">Monthly</TableHead>
-                      <TableHead className="pr-6 text-right">Weekly</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRow className="dark:border-zinc-800">
-                      <TableCell className="pl-6 font-medium">
-                        Gross Income (Salary + Part-time)
-                      </TableCell>
-                      <TableCell className="text-right whitespace-nowrap">
-                        €{formatCurrency(calculation.grossIncome)}
-                      </TableCell>
-                      <TableCell className="text-right whitespace-nowrap">
-                        €{formatCurrency(calculation.grossIncome / 12)}
-                      </TableCell>
-                      <TableCell className="pr-6 text-right whitespace-nowrap">
-                        €{formatCurrency(calculation.grossIncome / 52)}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow className="dark:border-zinc-800">
-                      <TableCell className="pl-6 font-medium text-green-700 dark:text-green-400">
-                        Government Bonus (COLA)
-                      </TableCell>
-                      <TableCell className="text-right whitespace-nowrap text-green-700 dark:text-green-400">
-                        +€{formatCurrency(calculation.govBonus)}
-                      </TableCell>
-                      <TableCell className="text-right whitespace-nowrap text-green-700 dark:text-green-400">
-                        +€{formatCurrency(calculation.govBonus / 12)}
-                      </TableCell>
-                      <TableCell className="pr-6 text-right whitespace-nowrap text-green-700 dark:text-green-400">
-                        +€{formatCurrency(calculation.govBonus / 52)}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow className="dark:border-zinc-800">
-                      <TableCell className="pl-6 font-medium text-red-700 dark:text-red-400">
-                        Total Tax (Main + Flat)
-                      </TableCell>
-                      <TableCell className="text-right whitespace-nowrap text-red-700 dark:text-red-400">
-                        -€{formatCurrency(calculation.incomeTax)}
-                      </TableCell>
-                      <TableCell className="text-right whitespace-nowrap text-red-700 dark:text-red-400">
-                        -€{formatCurrency(calculation.incomeTax / 12)}
-                      </TableCell>
-                      <TableCell className="pr-6 text-right whitespace-nowrap text-red-700 dark:text-red-400">
-                        -€{formatCurrency(calculation.incomeTax / 52)}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow className="dark:border-zinc-800">
-                      <TableCell className="pl-6 font-medium text-red-700 dark:text-red-400">
-                        Social Security (SSC)
-                      </TableCell>
-                      <TableCell className="text-right whitespace-nowrap text-red-700 dark:text-red-400">
-                        -€{formatCurrency(calculation.ssc)}
-                      </TableCell>
-                      <TableCell className="text-right whitespace-nowrap text-red-700 dark:text-red-400">
-                        -€{formatCurrency(calculation.ssc / 12)}
-                      </TableCell>
-                      <TableCell className="pr-6 text-right whitespace-nowrap text-red-700 dark:text-red-400">
-                        -€{formatCurrency(calculation.ssc / 52)}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow className="border-t-2 border-black bg-gray-100 font-bold dark:border-white dark:bg-zinc-800">
-                      <TableCell className="pl-6">Net Earnings</TableCell>
-                      <TableCell className="text-right whitespace-nowrap">
-                        €{formatCurrency(calculation.netIncome)}
-                      </TableCell>
-                      <TableCell className="text-right whitespace-nowrap">
-                        €{formatCurrency(calculation.netIncome / 12)}
-                      </TableCell>
-                      <TableCell className="pr-6 text-right whitespace-nowrap">
-                        €{formatCurrency(calculation.netIncome / 52)}
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
+            {/* 2. Tax Obligations Summary (Moved here from bottom) */}
+            <Card className="overflow-hidden border-black shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+              <CardHeader className="border-b bg-gray-50 dark:border-zinc-800 dark:bg-zinc-800/50">
+                <CardTitle className="text-base font-semibold">
+                  Tax Obligations Summary
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table className="min-w-[500px]">
+                    <TableHeader>
+                      <TableRow className="dark:border-zinc-800">
+                        <TableHead className="w-[40%] pl-6">
+                          Description
+                        </TableHead>
+                        <TableHead className="text-right">Yearly</TableHead>
+                        <TableHead className="text-right">Monthly</TableHead>
+                        <TableHead className="pr-6 text-right">
+                          Weekly
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <TableRow className="dark:border-zinc-800">
+                        <TableCell className="pl-6 font-medium">
+                          Gross Income
+                        </TableCell>
+                        <TableCell className="text-right whitespace-nowrap">
+                          €{formatCurrency(calculation.grossIncome)}
+                        </TableCell>
+                        <TableCell className="text-right whitespace-nowrap">
+                          €{formatCurrency(calculation.grossIncome / 12)}
+                        </TableCell>
+                        <TableCell className="pr-6 text-right whitespace-nowrap">
+                          €{formatCurrency(calculation.grossIncome / 52)}
+                        </TableCell>
+                      </TableRow>
+                      <TableRow className="dark:border-zinc-800">
+                        <TableCell className="pl-6 font-medium text-green-700 dark:text-green-400">
+                          Government Bonus
+                        </TableCell>
+                        <TableCell className="text-right whitespace-nowrap text-green-700 dark:text-green-400">
+                          +€{formatCurrency(calculation.govBonus)}
+                        </TableCell>
+                        <TableCell className="text-right whitespace-nowrap text-green-700 dark:text-green-400">
+                          +€{formatCurrency(calculation.govBonus / 12)}
+                        </TableCell>
+                        <TableCell className="pr-6 text-right whitespace-nowrap text-green-700 dark:text-green-400">
+                          +€{formatCurrency(calculation.govBonus / 52)}
+                        </TableCell>
+                      </TableRow>
+                      <TableRow className="dark:border-zinc-800">
+                        <TableCell className="pl-6 font-medium text-red-700 dark:text-red-400">
+                          Total Tax
+                        </TableCell>
+                        <TableCell className="text-right whitespace-nowrap text-red-700 dark:text-red-400">
+                          -€{formatCurrency(calculation.incomeTax)}
+                        </TableCell>
+                        <TableCell className="text-right whitespace-nowrap text-red-700 dark:text-red-400">
+                          -€{formatCurrency(calculation.incomeTax / 12)}
+                        </TableCell>
+                        <TableCell className="pr-6 text-right whitespace-nowrap text-red-700 dark:text-red-400">
+                          -€{formatCurrency(calculation.incomeTax / 52)}
+                        </TableCell>
+                      </TableRow>
+                      <TableRow className="dark:border-zinc-800">
+                        <TableCell className="pl-6 font-medium text-red-700 dark:text-red-400">
+                          Social Security
+                        </TableCell>
+                        <TableCell className="text-right whitespace-nowrap text-red-700 dark:text-red-400">
+                          -€{formatCurrency(calculation.ssc)}
+                        </TableCell>
+                        <TableCell className="text-right whitespace-nowrap text-red-700 dark:text-red-400">
+                          -€{formatCurrency(calculation.ssc / 12)}
+                        </TableCell>
+                        <TableCell className="pr-6 text-right whitespace-nowrap text-red-700 dark:text-red-400">
+                          -€{formatCurrency(calculation.ssc / 52)}
+                        </TableCell>
+                      </TableRow>
+                      <TableRow className="border-t-2 border-black bg-gray-100 font-bold dark:border-white dark:bg-zinc-800">
+                        <TableCell className="pl-6">Net Earnings</TableCell>
+                        <TableCell className="text-right whitespace-nowrap">
+                          €{formatCurrency(calculation.netIncome)}
+                        </TableCell>
+                        <TableCell className="text-right whitespace-nowrap">
+                          €{formatCurrency(calculation.netIncome / 12)}
+                        </TableCell>
+                        <TableCell className="pr-6 text-right whitespace-nowrap">
+                          €{formatCurrency(calculation.netIncome / 52)}
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* Logic Accordion - Full Width Bottom */}
@@ -603,7 +594,7 @@ export default function PersonalTaxCalculator() {
           >
             <AccordionItem value="logic" className="border-b-0">
               <AccordionTrigger className="text-sm font-semibold hover:no-underline">
-                View Calculation Logic & Formulas (2025)
+                View Calculation Logic & Formulas
               </AccordionTrigger>
               <AccordionContent>
                 <div className="grid gap-8 border-t pt-4 lg:grid-cols-2 dark:border-zinc-800">
@@ -618,18 +609,38 @@ export default function PersonalTaxCalculator() {
                           : "Non-Resident"}{" "}
                         rates (2025 Budget).
                       </p>
+                      <div className="mt-2 space-y-2 rounded-md bg-blue-50 p-3 text-blue-900 dark:bg-blue-950/30 dark:text-blue-100">
+                        <p className="font-semibold">
+                          Chargeable Income Formula:
+                        </p>
+                        <p className="font-mono text-[11px]">
+                          Gross Salary + (Part-time - Threshold) + Gov Bonus
+                        </p>
+                        {Number.parseFloat(form.grossSalary) > 0 && (
+                          <div className="border-t border-blue-200 pt-2 dark:border-blue-800">
+                            <p className="text-[10px] font-bold uppercase opacity-70">
+                              Your Calculation:
+                            </p>
+                            <p className="font-mono text-[11px]">
+                              €{formatCurrency(Number(form.grossSalary))} + €
+                              {formatCurrency(
+                                calculation.taxableIncome -
+                                  Number(form.grossSalary) -
+                                  GOV_BONUS,
+                              )}{" "}
+                              + €{formatCurrency(GOV_BONUS)} ={" "}
+                              <span className="font-bold">
+                                €{formatCurrency(calculation.taxableIncome)}
+                              </span>
+                            </p>
+                          </div>
+                        )}
+                      </div>
                       <ul className="mt-2 list-disc space-y-1 pl-4">
                         <li>
-                          <strong>Main Taxable Income:</strong> €
-                          {formatCurrency(calculation.taxableIncome)}
-                          <br />
-                          <span className="text-[10px] text-gray-400">
-                            (Gross Salary + Excess Part-time over threshold)
-                          </span>
-                        </li>
-                        <li>
                           <strong>Main Tax Amount:</strong> €
-                          {formatCurrency(calculation.mainTax)}
+                          {formatCurrency(calculation.mainTax)} (Calculated on
+                          Chargeable Income)
                         </li>
                         {calculation.partTimeGross > 0 && (
                           <>
