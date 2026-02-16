@@ -73,6 +73,14 @@ interface FullCalculation {
   year2028: YearCalculation;
 }
 
+interface SSCDetails {
+  weeklyGross: number;
+  weeklySSC: number;
+  annualSSC: number;
+  rateDescription: string;
+  logicDescription: string;
+}
+
 // --- CONSTANTS ---
 
 const GOV_BONUS = 512.72; // 121.36 + 135.1 + 121.16 + 135.1
@@ -132,38 +140,111 @@ export default function MarriedParentTaxCalculator() {
     validateField(field, value);
   };
 
-  // 3. SSC Calculation (Same as previous)
-  const calculateSSC = (annualGross: number) => {
+  // 3. SSC Calculation Helper (Returns details for UI)
+  const getSSCDetails = (annualGross: number, status: string): SSCDetails => {
     const weeklyGross = annualGross / 52;
-
-    if (form.sscStatus === "Exempt from paying NI/SSC") return 0;
-
-    if (form.sscStatus === "Student (under 18 years old)") {
-      return Math.min(weeklyGross * 0.1, 4.38) * 52;
-    }
-    if (form.sscStatus === "Student (18 years old and over)") {
-      return Math.min(weeklyGross * 0.1, 7.94) * 52;
-    }
-
     let weeklySSC = 0;
-    if (form.sscStatus === "Employed (under 18 years old)") {
-      if (weeklyGross <= 221.78) weeklySSC = 6.62;
-      else if (weeklyGross <= 544.28) weeklySSC = weeklyGross * 0.1;
-      else weeklySSC = 54.43;
+    let rateDescription = "";
+    let logicDescription = "";
+
+    if (status === "Exempt from paying NI/SSC") {
+      return {
+        weeklyGross,
+        weeklySSC: 0,
+        annualSSC: 0,
+        rateDescription: "Exempt",
+        logicDescription: "User is exempt from SSC.",
+      };
+    }
+
+    if (status === "Student (under 18 years old)") {
+      // Min(10%, 4.38)
+      const tenPercent = weeklyGross * 0.1;
+      if (tenPercent < 4.38) {
+        weeklySSC = tenPercent;
+        rateDescription = "10% of Weekly Gross";
+        logicDescription = "Student rate (10%) is lower than the €4.38 cap.";
+      } else {
+        weeklySSC = 4.38;
+        rateDescription = "€4.38 / week (Fixed Cap)";
+        logicDescription = "Student rate capped at €4.38 maximum.";
+      }
+    } else if (status === "Student (18 years old and over)") {
+      // Min(10%, 7.94)
+      const tenPercent = weeklyGross * 0.1;
+      if (tenPercent < 7.94) {
+        weeklySSC = tenPercent;
+        rateDescription = "10% of Weekly Gross";
+        logicDescription = "Student rate (10%) is lower than the €7.94 cap.";
+      } else {
+        weeklySSC = 7.94;
+        rateDescription = "€7.94 / week (Fixed Cap)";
+        logicDescription = "Student rate capped at €7.94 maximum.";
+      }
+    } else if (status === "Employed (under 18 years old)") {
+      if (weeklyGross <= 221.78) {
+        weeklySSC = 6.62;
+        rateDescription = "€6.62 / week (Minimum)";
+        logicDescription =
+          "Weekly income is below or equal to €221.78 (Minimum Rate applies).";
+      } else if (weeklyGross <= 544.28) {
+        weeklySSC = weeklyGross * 0.1;
+        rateDescription = "10% of Weekly Gross";
+        logicDescription =
+          "Weekly income is between €221.79 and €544.28 (Standard 10% applies).";
+      } else {
+        weeklySSC = 54.43;
+        rateDescription = "€54.43 / week (Maximum)";
+        logicDescription =
+          "Weekly income exceeds €544.28 (Maximum Cap applies).";
+      }
     } else if (
-      form.sscStatus ===
+      status ===
       "Employed (18 years old and over, born on or before 31 Dec 1961)"
     ) {
-      if (weeklyGross <= 221.78) weeklySSC = 22.18;
-      else if (weeklyGross <= 451.91) weeklySSC = weeklyGross * 0.1;
-      else weeklySSC = 45.19;
+      if (weeklyGross <= 221.78) {
+        weeklySSC = 22.18;
+        rateDescription = "€22.18 / week (Minimum)";
+        logicDescription =
+          "Weekly income is below or equal to €221.78 (Minimum Rate applies).";
+      } else if (weeklyGross <= 451.91) {
+        weeklySSC = weeklyGross * 0.1;
+        rateDescription = "10% of Weekly Gross";
+        logicDescription =
+          "Weekly income is between €221.79 and €451.91 (Standard 10% applies).";
+      } else {
+        weeklySSC = 45.19;
+        rateDescription = "€45.19 / week (Maximum)";
+        logicDescription =
+          "Weekly income exceeds €451.91 (Maximum Cap applies for born <= 1961).";
+      }
     } else {
-      if (weeklyGross <= 221.78) weeklySSC = 22.18;
-      else if (weeklyGross <= 544.28) weeklySSC = weeklyGross * 0.1;
-      else weeklySSC = 54.43;
+      // Employed (18+, Born >= 1962) - DEFAULT
+      if (weeklyGross <= 221.78) {
+        weeklySSC = 22.18;
+        rateDescription = "€22.18 / week (Minimum)";
+        logicDescription =
+          "Weekly income is below or equal to €221.78 (Minimum Rate applies).";
+      } else if (weeklyGross <= 544.28) {
+        weeklySSC = weeklyGross * 0.1;
+        rateDescription = "10% of Weekly Gross";
+        logicDescription =
+          "Weekly income is between €221.79 and €544.28 (Standard 10% applies).";
+      } else {
+        weeklySSC = 54.43;
+        rateDescription = "€54.43 / week (Maximum)";
+        logicDescription =
+          "Weekly income exceeds €544.28 (Maximum Cap applies).";
+      }
     }
 
-    return weeklySSC * 52;
+    return {
+      weeklyGross,
+      weeklySSC,
+      annualSSC: weeklySSC * 52,
+      rateDescription,
+      logicDescription,
+    };
   };
 
   // 4. Tax Logic (Multi-Year)
@@ -269,13 +350,42 @@ export default function MarriedParentTaxCalculator() {
     return Math.max(0, tax);
   };
 
-  const calculateAll = (): FullCalculation => {
+  const calculateAll = (): FullCalculation & { sscDetails: SSCDetails } => {
+    // Return zeroed object if grossSalary is empty
+    if (!form.grossSalary) {
+      const zeroYear: YearCalculation = {
+        taxableIncome: 0,
+        mainTax: 0,
+        partTimeTax: 0,
+        totalTax: 0,
+        netIncome: 0,
+      };
+      return {
+        grossIncome: 0,
+        ssc: 0,
+        govBonus: 0,
+        year2026: zeroYear,
+        year2027: zeroYear,
+        year2028: zeroYear,
+        sscDetails: {
+          weeklyGross: 0,
+          weeklySSC: 0,
+          annualSSC: 0,
+          rateDescription: "-",
+          logicDescription: "-",
+        },
+      };
+    }
+
     const grossSalary = Number.parseFloat(form.grossSalary) || 0;
     const partTime = Number.parseFloat(form.partTimeIncome) || 0;
-    const ssc = calculateSSC(grossSalary);
+
+    // Get precise SSC details
+    const sscDetails = getSSCDetails(grossSalary, form.sscStatus);
+    const ssc = sscDetails.annualSSC;
     const totalGross = grossSalary + partTime;
 
-    // Part Time Tax Calculation (Same for all years)
+    // Part Time Tax Calculation (Fixed Rate on the threshold amount)
     let partTimeTax = 0;
     let excessPartTime = 0;
     if (partTime > 0) {
@@ -284,14 +394,15 @@ export default function MarriedParentTaxCalculator() {
       excessPartTime = Math.max(0, partTime - threshold);
     }
 
-    // Chargeable Income (Gross + Excess Part Time)
-    const chargeableIncome = grossSalary + excessPartTime;
+    // Chargeable Income = Gross + Excess Part Time + Government Bonus
+    const chargeableIncome = grossSalary + excessPartTime + GOV_BONUS;
 
     const buildYearCalc = (year: 2026 | 2027 | 2028): YearCalculation => {
       const mainTax = calculateTaxForYear(chargeableIncome, year);
       const totalTax = mainTax + partTimeTax;
-      // Net Income formula: Gross(inc PT) - Tax - SSC + Bonus
-      const netIncome = totalGross - totalTax - ssc + GOV_BONUS;
+      // Net Income = (Gross + PartTime + Bonus) - TotalTax - SSC
+      const netIncome = totalGross + GOV_BONUS - totalTax - ssc;
+
       return {
         taxableIncome: chargeableIncome,
         mainTax,
@@ -308,6 +419,7 @@ export default function MarriedParentTaxCalculator() {
       year2026: buildYearCalc(2026),
       year2027: buildYearCalc(2027),
       year2028: buildYearCalc(2028),
+      sscDetails,
     };
   };
 
@@ -364,7 +476,9 @@ export default function MarriedParentTaxCalculator() {
                       animate={{ opacity: 1, height: "auto" }}
                       className="space-y-2"
                     >
-                      <Label>Part-time Income (€)</Label>
+                      <Label>
+                        Part-time Income eligible for Fixed Rate (€)
+                      </Label>
                       <CurrencyInput
                         type="number"
                         placeholder="0.00"
@@ -396,11 +510,9 @@ export default function MarriedParentTaxCalculator() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="dark:bg-zinc-800 dark:text-white">
-                          <SelectItem value="Employment">
-                            Employment (Max €10k)
-                          </SelectItem>
+                          <SelectItem value="Employment">Employment</SelectItem>
                           <SelectItem value="Self-Employment">
-                            Self-Employment (Max €12k)
+                            Self-Employment
                           </SelectItem>
                         </SelectContent>
                       </Select>
@@ -663,7 +775,7 @@ export default function MarriedParentTaxCalculator() {
           </Card>
         </div>
 
-        {/* LOGIC ACCORDION */}
+        {/* LOGIC ACCORDION (STACKED VIEWS) */}
         <div className="mt-8">
           <Accordion
             type="single"
@@ -672,30 +784,126 @@ export default function MarriedParentTaxCalculator() {
           >
             <AccordionItem value="logic" className="border-b-0">
               <AccordionTrigger className="text-sm font-semibold hover:no-underline">
-                View Tax Rates for {form.taxStatus} (2026 - 2028)
+                View Calculation Breakdown
               </AccordionTrigger>
               <AccordionContent>
-                <div className="grid gap-6 pt-4 lg:grid-cols-3">
-                  {/* 2026 Table */}
-                  <div className="space-y-2">
-                    <h4 className="font-bold">Basis Year 2026</h4>
-                    <TaxTable year={2026} status={form.taxStatus} />
+                <div className="space-y-10 pt-4">
+                  {/* SECTION 1: TAX RATES */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-bold">
+                      1. Tax Rates for {form.taxStatus}
+                    </h3>
+                    <div className="grid gap-6 lg:grid-cols-3">
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-gray-700 dark:text-gray-300">
+                          Basis Year 2026
+                        </h4>
+                        <TaxTable year={2026} status={form.taxStatus} />
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-green-700 dark:text-green-400">
+                          Basis Year 2027
+                        </h4>
+                        <TaxTable year={2027} status={form.taxStatus} />
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-green-700 dark:text-green-400">
+                          Basis Year 2028
+                        </h4>
+                        <TaxTable year={2028} status={form.taxStatus} />
+                      </div>
+                    </div>
                   </div>
 
-                  {/* 2027 Table */}
-                  <div className="space-y-2">
-                    <h4 className="font-bold text-green-700 dark:text-green-400">
-                      Basis Year 2027
-                    </h4>
-                    <TaxTable year={2027} status={form.taxStatus} />
+                  <Separator className="dark:bg-zinc-700" />
+
+                  {/* SECTION 2: SSC */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-bold">
+                      2. Social Security (SSC) Breakdown
+                    </h3>
+                    <div className="rounded-md border border-gray-100 bg-gray-50 p-4 text-sm dark:border-zinc-800 dark:bg-zinc-800/50">
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium text-gray-500 uppercase dark:text-gray-400">
+                            Status
+                          </p>
+                          <p className="font-semibold">{form.sscStatus}</p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium text-gray-500 uppercase dark:text-gray-400">
+                            Weekly Gross (Main)
+                          </p>
+                          <p className="font-semibold">
+                            €{formatCurrency(results.sscDetails.weeklyGross)}
+                          </p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium text-gray-500 uppercase dark:text-gray-400">
+                            Applicable SSC Rate
+                          </p>
+                          <p className="font-semibold text-red-600 dark:text-red-400">
+                            {results.sscDetails.rateDescription}
+                          </p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium text-gray-500 uppercase dark:text-gray-400">
+                            Annual SSC Total
+                          </p>
+                          <p className="font-semibold text-red-600 dark:text-red-400">
+                            €{formatCurrency(results.sscDetails.weeklySSC)} × 52
+                            weeks = €
+                            {formatCurrency(results.sscDetails.annualSSC)}
+                          </p>
+                        </div>
+                      </div>
+                      <Separator className="my-4 dark:bg-zinc-700" />
+                      <div>
+                        <p className="text-xs font-bold text-gray-500 uppercase dark:text-gray-400">
+                          Logic Used
+                        </p>
+                        <p className="mt-1 text-gray-700 dark:text-gray-300">
+                          {results.sscDetails.logicDescription}
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* 2028 Table */}
-                  <div className="space-y-2">
-                    <h4 className="font-bold text-green-700 dark:text-green-400">
-                      Basis Year 2028
-                    </h4>
-                    <TaxTable year={2028} status={form.taxStatus} />
+                  <Separator className="dark:bg-zinc-700" />
+
+                  {/* SECTION 3: GOV BONUS */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-bold">
+                      3. Government Bonus (COLA) Breakdown
+                    </h3>
+                    <div className="max-w-md space-y-4 text-sm">
+                      <p className="text-gray-500 dark:text-gray-400">
+                        Fixed quarterly allowances added to Net Income:
+                      </p>
+                      <div className="grid grid-cols-2 gap-y-2 rounded-md border border-gray-100 bg-gray-50 p-4 dark:border-zinc-800 dark:bg-zinc-800/50">
+                        <div className="font-medium">March</div>
+                        <div className="text-right font-semibold text-green-700 dark:text-green-400">
+                          €121.36
+                        </div>
+                        <div className="font-medium">June</div>
+                        <div className="text-right font-semibold text-green-700 dark:text-green-400">
+                          €135.10
+                        </div>
+                        <div className="font-medium">September</div>
+                        <div className="text-right font-semibold text-green-700 dark:text-green-400">
+                          €121.16
+                        </div>
+                        <div className="font-medium">December</div>
+                        <div className="text-right font-semibold text-green-700 dark:text-green-400">
+                          €135.10
+                        </div>
+                        <Separator className="col-span-2 my-2 dark:bg-zinc-700" />
+                        <div className="font-bold">Total Annual</div>
+                        <div className="text-right font-bold text-green-700 dark:text-green-400">
+                          €512.72
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </AccordionContent>
