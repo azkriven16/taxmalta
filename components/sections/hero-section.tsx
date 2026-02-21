@@ -94,10 +94,9 @@ export function HeroSection() {
               as="p"
               className="text-muted-foreground lg:text-lg"
             >
-              Get an accurate estimate of your Malta taxes, including interest
-              and penalties, with our free calculators. Whether you’re an
-              individual or a corporation, our tool provides a clear, detailed
-              breakdown of all applicable taxes in just a few clicks.
+              Instant, reliable estimates for your Malta tax, audit, and other
+              compliance obligations — all in a few clicks. Try our calculators
+              – no sign-in required.
             </TextEffect>
 
             <p className="text-muted-foreground text-balance lg:text-lg">
@@ -160,8 +159,8 @@ const features = [
   },
   {
     icon: <FaUserCheck className="text-2xl text-purple-400" />,
-    title: "User-Friendly Interface",
+    title: "Complete Data Privacy",
     description:
-      "Clean, intuitive design that works for everyone — no tax knowledge required.",
+      "Your data never leaves your device. All calculations are processed inbrowser, and no personal data is saved, shared, or transmitted.",
   },
 ];

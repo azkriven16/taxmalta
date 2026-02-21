@@ -6,18 +6,13 @@ export const CalculatorsSection = () => {
     <section className="mx-auto max-w-7xl">
       <div>
         <h1 className="text-3xl font-extrabold lg:text-5xl">
-          Most Popular Malta Tax Calculators
+          Our Malta Tax and Compliance Calculators
         </h1>
-        <p className="text-muted-foreground mx-auto mt-5 lg:text-lg">
-          Discover the top 3 tax calculators our users rely on the most. Simple,
-          accurate, and easy to use — these tools make handling tax in Malta a
-          breeze.
-        </p>
       </div>
       <div>
         <HoverEffect items={freeCalculators} />
       </div>
-
+      {/* 
       <div>
         <h1 className="mt-10 text-3xl font-extrabold lg:text-5xl">
           Explore More Tools
@@ -30,12 +25,28 @@ export const CalculatorsSection = () => {
       </div>
       <div className="mx-auto max-w-7xl">
         <HoverEffect items={moreCalculators} />
-      </div>
+      </div> */}
     </section>
   );
 };
 
 const freeCalculators = [
+  {
+    title: "Personal Income Tax (Single)",
+    description:
+      "Specifically designed for individuals filing under the single tax status. View the exact tax bands and rates that apply to your gross income.",
+    link: "/calculators/personal-tax-calculator-without-children",
+    image:
+      "https://images.unsplash.com/photo-1512428559087-560fa5ceab42?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    title: "Personal Income Tax (Parent)",
+    description:
+      "Maximize your tax savings using parent-specific rates. Calculate your net income while accounting for the deductions available to parents.",
+    link: "/calculators/personal-tax-calculator-with-children",
+    image:
+      "https://images.unsplash.com/photo-1580519542036-c47de6196ba5?auto=format&fit=crop&w=800&q=80",
+  },
   {
     title: "Late Tax Penalty Calculator",
     description:
@@ -43,14 +54,6 @@ const freeCalculators = [
     link: "/calculators/late-tax-penalty-calculator",
     image:
       "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=800&q=80",
-  },
-  {
-    title: "Notice Period Calculator",
-    description:
-      "Calculate your required notice period and final working day based on your length of service. Essential for planning your next career move smoothly.",
-    link: "/calculators/notice-period-calculator",
-    image:
-      "https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?auto=format&fit=crop&w=800&q=80",
   },
   {
     title: "Rental Income Tax Calculator",
@@ -68,29 +71,13 @@ const freeCalculators = [
     image:
       "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=800&q=80",
   },
-  // {
-  //   title: "Personal Income Tax Calculator",
-  //   description:
-  //     "Get an instant estimate of your net take-home pay. This tool factors in both income tax and social security deductions for a complete breakdown.",
-  //   link: "/calculators/personal-tax-calculator",
-  //   image:
-  //     "https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&w=800&q=80",
-  // },
   {
-    title: "Personal Income Tax (Single)",
+    title: "Notice Period Calculator",
     description:
-      "Specifically designed for individuals filing under the single tax status. View the exact tax bands and rates that apply to your gross income.",
-    link: "/calculators/personal-tax-calculator-without-children",
+      "Calculate your required notice period and final working day based on your length of service. Essential for planning your next career move smoothly.",
+    link: "/calculators/notice-period-calculator",
     image:
-      "https://images.unsplash.com/photo-1512428559087-560fa5ceab42?auto=format&fit=crop&w=800&q=80",
-  },
-  {
-    title: "Personal Income Tax (Parent)",
-    description:
-      "Maximize your tax savings using parent-specific rates. Calculate your net income while accounting for the deductions available to parents.",
-    link: "/calculators/personal-tax-calculator-with-children",
-    image:
-      "https://images.unsplash.com/photo-1580519542036-c47de6196ba5?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?auto=format&fit=crop&w=800&q=80",
   },
 ];
 

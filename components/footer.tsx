@@ -65,7 +65,7 @@ export const Footer = ({
       ],
     },
   ],
-  copyright = "© 2025 TaxMalta. All rights reserved.",
+  copyright = "© 2026 TaxMalta. All rights reserved.",
   bottomLinks = [
     { text: "Terms and Conditions", url: "#" },
     { text: "Privacy Policy", url: "#" },
@@ -93,13 +93,13 @@ export const Footer = ({
         </div>
         <div className="text-muted-foreground mt-24 flex flex-col justify-between gap-4 border-t pt-8 text-sm font-medium md:flex-row md:items-center">
           <p>{copyright}</p>
-          <ul className="flex gap-4">
+          {/* <ul className="flex gap-4">
             {bottomLinks.map((link, linkIdx) => (
               <li key={linkIdx} className="hover:text-primary underline">
                 <a href={link.url}>{link.text}</a>
               </li>
             ))}
-          </ul>
+          </ul> */}
         </div>
       </footer>
     </div>

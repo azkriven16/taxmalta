@@ -8,7 +8,7 @@ export default function Page() {
       <HeroSection />
       <CalculatorsSection />
       {/* <FeaturesSection /> */}
-      <FaqSection />
+      {/* <FaqSection /> */}
       {/* <StatsSection /> */}
     </main>
   );

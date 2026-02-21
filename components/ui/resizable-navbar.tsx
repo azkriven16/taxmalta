@@ -245,7 +245,7 @@ export const MobileNavToggle = ({
 export const NavbarLogo = () => {
   return (
     <Link href="/" className="relative">
-      <span className="text-foreground text-lg font-medium">TaxMalta</span>
+      <span className="text-foreground text-lg font-medium">CipTaxPro</span>
     </Link>
   );
 };
