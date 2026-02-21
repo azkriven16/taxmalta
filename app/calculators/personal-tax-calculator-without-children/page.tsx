@@ -1,4 +1,4 @@
-"use client";
+import type { Metadata } from "next";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -7,7 +7,14 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import LateTaxPenaltyCalc from "./_components/personal-tax-calculator";
+import SingleTaxCalc from "./_components/personal-tax-calculator";
+
+export const metadata: Metadata = {
+  title: "Personal Income Tax Calculator (Single Status)",
+  description:
+    "Calculate your Malta personal income tax under the single filing status. View exact tax bands, rates, and net income based on your gross earnings.",
+};
+
 export default function Page() {
   return (
     <main className="container mx-auto flex flex-col gap-20 p-4 pt-24 lg:gap-36 lg:p-8 lg:pt-40">
@@ -29,9 +36,8 @@ export default function Page() {
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-        <LateTaxPenaltyCalc />
+        <SingleTaxCalc />
       </section>
     </main>
   );
 }
-// Late tax return penalty and interest calculator

@@ -1,4 +1,4 @@
-"use client";
+import type { Metadata } from "next";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -8,6 +8,13 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import AuditExemptionCalculator from "./_components/audit-exemption-calculator";
+
+export const metadata: Metadata = {
+  title: "Audit Exemption Eligibility Calculator",
+  description:
+    "Check if your Malta-based company meets the legal thresholds for an audit exemption. Enter your turnover, asset value, and employee count for instant results.",
+};
+
 export default function Page() {
   return (
     <main className="container mx-auto flex flex-col gap-20 p-4 pt-24 lg:gap-36 lg:p-8 lg:pt-40">
@@ -32,4 +39,3 @@ export default function Page() {
     </main>
   );
 }
-// Late tax return penalty and interest calculator

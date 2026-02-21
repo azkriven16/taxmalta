@@ -42,13 +42,11 @@ export function NavbarDemo() {
         <NavItems items={navItems} />
         <div className="flex items-center gap-4">
           <NavbarButton variant="primary">Get Started</NavbarButton>
-
-          {/* Buy Me a Coffee - Desktop */}
           <Link
-            href="https://www.buymeacoffee.com/YOUR_USERNAME"
+            href="https://buymeacoffee.com/ciptaxpro"
             target="_blank"
             rel="noopener noreferrer"
-            className="transition-transform hover:scale-105"
+            className="z-10 transition-transform hover:scale-105"
           >
             <Image
               src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"
@@ -68,9 +66,8 @@ export function NavbarDemo() {
         <MobileNavHeader>
           <NavbarLogo />
           <div className="flex items-center gap-2">
-            {/* Buy Me a Coffee - Mobile */}
             <Link
-              href="https://www.buymeacoffee.com/YOUR_USERNAME"
+              href="https://buymeacoffee.com/ciptaxpro"
               target="_blank"
               rel="noopener noreferrer"
             >

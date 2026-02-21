@@ -1,4 +1,4 @@
-"use client";
+import type { Metadata } from "next";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -8,6 +8,12 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import RentalIncomeTaxCalculator from "./_components/rental-income-tax-calculator";
+
+export const metadata: Metadata = {
+  title: "Rental Income Tax Calculator",
+  description:
+    "Compare the 15% flat rate against progressive tax rates to find the most cost-effective way to declare your rental earnings in Malta.",
+};
 
 export default function Page() {
   return (

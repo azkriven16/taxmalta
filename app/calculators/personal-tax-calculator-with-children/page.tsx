@@ -1,4 +1,4 @@
-"use client";
+import type { Metadata } from "next";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -7,7 +7,14 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import LateTaxPenaltyCalc from "./_components/personal-tax-calculator";
+import ParentTaxCalc from "./_components/personal-tax-calculator";
+
+export const metadata: Metadata = {
+  title: "Parent Rates Tax Calculator",
+  description:
+    "Maximize your tax savings in Malta using parent-specific rates. Calculate your net income while accounting for deductions available to parents.",
+};
+
 export default function Page() {
   return (
     <main className="container mx-auto flex flex-col gap-20 p-4 pt-24 lg:gap-36 lg:p-8 lg:pt-40">
@@ -29,9 +36,8 @@ export default function Page() {
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-        <LateTaxPenaltyCalc />
+        <ParentTaxCalc />
       </section>
     </main>
   );
 }
-// Late tax return penalty and interest calculator

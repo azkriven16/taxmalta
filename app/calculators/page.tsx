@@ -1,5 +1,12 @@
+import type { Metadata } from "next";
 import { CalculatorsSection } from "@/components/sections/calculators-section";
 import { FaqSection } from "@/components/sections/faq-section";
+
+export const metadata: Metadata = {
+  title: "Malta Tax & Compliance Calculators",
+  description:
+    "Explore our full suite of free Malta tax and compliance calculators. Instantly calculate personal income tax, rental earnings, audit exemptions, late penalties, and notice periods.",
+};
 
 export default function CalculatorsPage() {
   return (
