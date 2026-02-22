@@ -29,60 +29,67 @@ export function HeroSection() {
         <div className="container text-center">
           <div className="mx-auto flex max-w-5xl flex-col gap-6">
             {/* h1 */}
-            <div className="text-3xl leading-tight font-extrabold lg:text-6xl">
-              <TextEffect
-                per="word"
-                as="h1"
-                preset="slide"
-                className="inline-block"
-                delay={0.25}
-              >
-                🤔 Know Your Numbers
-              </TextEffect>
-              <br />
-              <TextEffect
-                per="word"
-                as="h1"
-                preset="slide"
-                className="inline-block"
-                delay={0.5}
-              >
-                — Calculate
-              </TextEffect>{" "}
-              <Highlighter
-                action="underline"
-                padding={4}
-                multiline={true}
-                color="oklch(79.5% 0.184 86.047)"
-                className="text-foreground font-extrabold"
-                animationDuration={2000}
-              >
+            <div className="text-3xl leading-tight font-extrabold md:text-4xl lg:text-6xl">
+              {/* Line 1 */}
+              <div className="whitespace-nowrap">
                 <TextEffect
                   per="word"
                   as="h1"
                   preset="slide"
                   className="inline-block"
-                  delay={0.75}
+                  delay={0.25}
                 >
-                  Instantly!
+                  🤔 Know Your Numbers
                 </TextEffect>
-              </Highlighter>{" "}
+              </div>
+
+              {/* Line 2 */}
+              <div className="mt-2 whitespace-nowrap lg:mt-4">
+                <TextEffect
+                  per="word"
+                  as="h1"
+                  preset="slide"
+                  className="inline-block"
+                  delay={0.5}
+                >
+                  — Calculate
+                </TextEffect>{" "}
+                <Highlighter
+                  action="underline"
+                  padding={4}
+                  multiline={true}
+                  color="oklch(79.5% 0.184 86.047)"
+                  className="text-foreground inline-block font-extrabold"
+                  animationDuration={2000}
+                >
+                  <TextEffect
+                    per="word"
+                    as="h1"
+                    preset="slide"
+                    className="inline-block"
+                    delay={0.75}
+                  >
+                    Instantly!
+                  </TextEffect>
+                </Highlighter>
+              </div>
             </div>
+
             <TextEffect
               per="word"
               preset="blur"
               speedReveal={4}
               speedSegment={5}
               as="p"
-              className="text-muted-foreground lg:text-lg"
+              className="text-muted-foreground text-lg lg:text-xl"
             >
               Instant, reliable estimates for your Malta tax, audit, and other
               compliance obligations — all in a few clicks.
             </TextEffect>
 
-            <p className="text-muted-foreground text-balance lg:text-lg">
+            <p className="text-muted-foreground text-lg text-balance lg:text-xl">
               Try our calculators —{" "}
-              <span className="text-foreground font-semibold lg:text-lg">
+              <span className="text-foreground text-lg font-semibold lg:text-xl">
                 no sign-in required.
               </span>
             </p>
