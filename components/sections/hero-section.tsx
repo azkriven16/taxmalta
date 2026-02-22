@@ -30,24 +30,6 @@ export function HeroSection() {
           <div className="mx-auto flex max-w-5xl flex-col gap-6">
             {/* h1 */}
             <div className="text-3xl leading-tight font-extrabold lg:text-6xl">
-              <Highlighter
-                action="crossed-off"
-                padding={1}
-                multiline={false}
-                color="red"
-                className="text-foreground font-extrabold"
-                animationDuration={1500}
-              >
-                <TextEffect
-                  per="word"
-                  as="h1"
-                  preset="slide"
-                  className="inline-block"
-                  delay={0}
-                >
-                  Stop Guessing
-                </TextEffect>
-              </Highlighter>{" "}
               <TextEffect
                 per="word"
                 as="h1"
@@ -55,7 +37,7 @@ export function HeroSection() {
                 className="inline-block"
                 delay={0.25}
               >
-                🤔 Your Taxes
+                🤔 Know Your Numbers
               </TextEffect>
               <br />
               <TextEffect
@@ -95,8 +77,7 @@ export function HeroSection() {
               className="text-muted-foreground lg:text-lg"
             >
               Instant, reliable estimates for your Malta tax, audit, and other
-              compliance obligations — all in a few clicks. Try our calculators
-              – no sign-in required.
+              compliance obligations — all in a few clicks.
             </TextEffect>
 
             <p className="text-muted-foreground text-balance lg:text-lg">
