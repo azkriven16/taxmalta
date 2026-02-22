@@ -6,6 +6,7 @@ import {
   useMotionValueEvent,
   useScroll,
 } from "motion/react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React, { useRef, useState } from "react";
@@ -245,7 +246,9 @@ export const MobileNavToggle = ({
 export const NavbarLogo = () => {
   return (
     <Link href="/" className="relative">
-      <span className="text-foreground text-lg font-medium">CipTaxPro</span>
+      <div className="rounded-lg bg-none p-2 dark:bg-gray-100">
+        <Image src="/ciptax.svg" alt="CipTaxPro" width={150} height={150} />
+      </div>
     </Link>
   );
 };
