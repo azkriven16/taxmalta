@@ -32,20 +32,18 @@ export const CalculatorsSection = () => {
 
 const freeCalculators = [
   {
-    title: "Personal Income Tax (Single)",
+    title: "Personal Income Tax Calculator Without Children",
     description:
       "Specifically designed for individuals filing under the single tax status. View the exact tax bands and rates that apply to your gross income.",
     link: "/calculators/personal-tax-calculator-without-children",
-    image:
-      "https://images.unsplash.com/photo-1512428559087-560fa5ceab42?auto=format&fit=crop&w=800&q=80",
+    image: "/images/personal-income-tax-calculator-without-children.svg",
   },
   {
-    title: "Personal Income Tax (Parent)",
+    title: "Personal Income Tax Calculator With Children",
     description:
       "Maximize your tax savings using parent-specific rates. Calculate your net income while accounting for the deductions available to parents.",
     link: "/calculators/personal-tax-calculator-with-children",
-    image:
-      "https://images.unsplash.com/photo-1580519542036-c47de6196ba5?auto=format&fit=crop&w=800&q=80",
+    image: "/images/personal-income-tax-calculator-with-children.svg",
   },
   {
     title: "Late Tax Penalty Calculator",
@@ -68,8 +66,7 @@ const freeCalculators = [
     description:
       "Check if your company meets the legal thresholds for an audit exemption. Simply enter your turnover, asset value, and employee count.",
     link: "/calculators/audit-exemption-calculator",
-    image:
-      "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=800&q=80",
+    image: "/images/audit-exemption-calculator.svg",
   },
   {
     title: "Notice Period Calculator",
@@ -78,6 +75,13 @@ const freeCalculators = [
     link: "/calculators/notice-period-calculator",
     image:
       "https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    title: "Withholding Tax Calculator",
+    description:
+      "Calculate your withholding tax based on your gross salary and tax status.",
+    link: "/calculators/salary-withholding-tax-validation-calculator",
+    image: "/images/withholding-tax-calculator.svg",
   },
 ];
 

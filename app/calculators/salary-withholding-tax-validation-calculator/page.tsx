@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -7,12 +6,13 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import SingleTaxCalc from "./_components/personal-tax-calculator";
+import type { Metadata } from "next";
+import WithholdingTaxCalculator from "./_components/salary-withholding-tax-validation-calculator";
 
 export const metadata: Metadata = {
-  title: "Personal Income Tax Calculator (Single Status)",
+  title: "Employment Notice Period Calculator",
   description:
-    "Calculate your Malta personal income tax under the single filing status. View exact tax bands, rates, and net income based on your gross earnings.",
+    "Calculate your required notice period and final working day in Malta based on your length of service. Plan your career move smoothly and stay compliant.",
 };
 
 export default function Page() {
@@ -30,13 +30,11 @@ export default function Page() {
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>
-                Personal Income Tax Calculator Without Children
-              </BreadcrumbPage>
+              <BreadcrumbPage>Withholding Tax Calculator</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-        <SingleTaxCalc />
+        <WithholdingTaxCalculator />
       </section>
     </main>
   );

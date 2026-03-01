@@ -161,7 +161,7 @@ const CardImage = ({
           alt={alt}
           priority={priority}
           className={cn(
-            "aspect-[16/10] w-full object-cover transition-opacity duration-300",
+            "aspect-[16/10] w-full object-fill transition-opacity duration-300",
             isLoading && "opacity-0",
             className,
           )}

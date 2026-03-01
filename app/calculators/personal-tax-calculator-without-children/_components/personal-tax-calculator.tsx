@@ -35,13 +35,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+// ─── Types ────────────────────────────────────────────────────────────────
+
 interface FormState {
   grossSalary: string;
   partTimeIncome: string;
   partTimeType: string;
   taxStatus: string;
   sscStatus: string;
-  residencyStatus: string;
 }
 
 interface ErrorState {
@@ -62,10 +63,43 @@ interface TaxCalculation {
   sscWeekly: number;
 }
 
+// ─── Constants ────────────────────────────────────────────────────────────
+
+const GOV_BONUS = 512.72;
+
+// Tax brackets per image feedback:
+// Single:  0–12k (0%), 12,001–16k (15%, −1,800), 16,001–60k (25%, −3,400), 60k+ (35%, −9,400)
+// Married: 0–15k (0%), 15,001–23k (15%, −2,250), 23,001–60k (25%, −4,550), 60k+ (35%, −10,550)
+const TAX_BRACKETS = {
+  Single: [
+    { from: 0, to: 12000, rate: 0, subtract: 0 },
+    { from: 12001, to: 16000, rate: 0.15, subtract: 1800 },
+    { from: 16001, to: 60000, rate: 0.25, subtract: 3400 },
+    { from: 60001, to: Infinity, rate: 0.35, subtract: 9400 },
+  ],
+  Married: [
+    { from: 0, to: 15000, rate: 0, subtract: 0 },
+    { from: 15001, to: 23000, rate: 0.15, subtract: 2250 },
+    { from: 23001, to: 60000, rate: 0.25, subtract: 4550 },
+    { from: 60001, to: Infinity, rate: 0.35, subtract: 10550 },
+  ],
+} as const;
+
+// ─── Helpers ──────────────────────────────────────────────────────────────
+
 const isValidAmount = (amount: string): boolean => {
   const num = Number.parseFloat(amount);
   return !isNaN(num) && num >= 0;
 };
+
+function applyBracket(income: number, status: "Single" | "Married"): number {
+  const brackets = TAX_BRACKETS[status];
+  const bracket = brackets.find((b) => income <= b.to);
+  if (!bracket || bracket.rate === 0) return 0;
+  return Math.max(0, income * bracket.rate - bracket.subtract);
+}
+
+// ─── Component ────────────────────────────────────────────────────────────
 
 export default function PersonalTaxCalculator() {
   const [form, setForm] = useState<FormState>({
@@ -74,14 +108,11 @@ export default function PersonalTaxCalculator() {
     partTimeType: "Employment",
     taxStatus: "Single",
     sscStatus: "Employed (18 years old and over, born on or after 1 Jan 1962)",
-    residencyStatus: "Resident",
   });
 
   const [errors, setErrors] = useState<ErrorState>({});
 
-  // Constants
-  const GOV_BONUS = 512.72;
-
+  // Step logic — removed residencyStatus step
   const computeStep = (f: FormState): number => {
     let s = 1;
     if (!f.grossSalary) return s;
@@ -90,10 +121,8 @@ export default function PersonalTaxCalculator() {
     s = 3;
     if (!f.taxStatus) return s;
     s = 4;
-    if (!f.residencyStatus) return s;
-    s = 5;
     if (!f.sscStatus) return s;
-    return 6;
+    return 5;
   };
 
   const step = computeStep(form);
@@ -113,19 +142,20 @@ export default function PersonalTaxCalculator() {
   };
 
   const handleChange = (field: keyof FormState, value: string): void => {
-    const newForm = { ...form, [field]: value };
-    setForm(newForm);
+    setForm((prev) => ({ ...prev, [field]: value }));
     validateField(field, value);
   };
 
-  // Exact SSC Formula
-  const calculateSSC = (annualGross: number) => {
+  // ─── SSC Calculation ────────────────────────────────────────────────────
+
+  const calculateSSC = (
+    annualGross: number,
+  ): { weekly: number; total: number } => {
     const weeklyGross = annualGross / 52;
 
-    if (form.sscStatus === "Exempt from paying NI/SSC")
+    if (form.sscStatus === "Exempt from paying NI/SSC") {
       return { weekly: 0, total: 0 };
-
-    // Student logic
+    }
     if (form.sscStatus === "Student (under 18 years old)") {
       const val = Math.min(weeklyGross * 0.1, 4.38);
       return { weekly: val, total: val * 52 };
@@ -135,7 +165,6 @@ export default function PersonalTaxCalculator() {
       return { weekly: val, total: val * 52 };
     }
 
-    // Employed logic
     let weeklySSC = 0;
     if (form.sscStatus === "Employed (under 18 years old)") {
       if (weeklyGross <= 221.78) weeklySSC = 6.62;
@@ -149,7 +178,7 @@ export default function PersonalTaxCalculator() {
       else if (weeklyGross <= 451.91) weeklySSC = weeklyGross * 0.1;
       else weeklySSC = 45.19;
     } else {
-      // Employed (18 year old and over, born on or after 1 Jan 1962)
+      // Born on or after 1 Jan 1962
       if (weeklyGross <= 221.78) weeklySSC = 22.18;
       else if (weeklyGross <= 544.28) weeklySSC = weeklyGross * 0.1;
       else weeklySSC = 54.43;
@@ -158,8 +187,20 @@ export default function PersonalTaxCalculator() {
     return { weekly: weeklySSC, total: weeklySSC * 52 };
   };
 
-  const calculateIncomeTax = (salary: number, partTime: number) => {
-    // 1. Calculate Part-Time Tax (Flat Rate 10%)
+  // ─── Income Tax Calculation ──────────────────────────────────────────────
+  // Uses corrected brackets from image feedback.
+  // Single → Single Rates table; Married → Married Rates table.
+
+  const calculateIncomeTax = (
+    salary: number,
+    partTime: number,
+  ): {
+    mainTax: number;
+    partTimeTax: number;
+    totalTax: number;
+    chargeableIncome: number;
+  } => {
+    // 1. Part-time flat tax (10%) up to threshold
     let partTimeTax = 0;
     let excessPartTime = 0;
 
@@ -170,40 +211,12 @@ export default function PersonalTaxCalculator() {
       excessPartTime = Math.max(0, partTime - threshold);
     }
 
-    // 2. Calculate Chargeable Income for Progressive Tax
-    // UPDATED LOGIC: Gross Salary + Excess Part Time + Government Bonus
+    // 2. Chargeable income = Gross Salary + excess part-time + Gov Bonus
     const chargeableIncome = salary + excessPartTime + GOV_BONUS;
 
-    let progressiveTax = 0;
-
-    if (form.residencyStatus === "Non-Resident") {
-      if (chargeableIncome <= 700) progressiveTax = 0;
-      else if (chargeableIncome <= 3100)
-        progressiveTax = chargeableIncome * 0.2 - 140;
-      else if (chargeableIncome <= 7800)
-        progressiveTax = chargeableIncome * 0.3 - 450;
-      else progressiveTax = chargeableIncome * 0.35 - 840;
-    } else {
-      // Resident Rates
-      if (form.taxStatus === "Married") {
-        if (chargeableIncome <= 22500) progressiveTax = 0;
-        else if (chargeableIncome <= 32000)
-          progressiveTax = chargeableIncome * 0.15 - 3375;
-        else if (chargeableIncome <= 60000)
-          progressiveTax = chargeableIncome * 0.25 - 6575;
-        else progressiveTax = chargeableIncome * 0.35 - 12575;
-      } else {
-        // Single
-        if (chargeableIncome <= 17500) progressiveTax = 0;
-        else if (chargeableIncome <= 26500)
-          progressiveTax = chargeableIncome * 0.15 - 2625;
-        else if (chargeableIncome <= 60000)
-          progressiveTax = chargeableIncome * 0.25 - 5275;
-        else progressiveTax = chargeableIncome * 0.35 - 11275;
-      }
-    }
-
-    const mainTax = Math.max(0, progressiveTax);
+    // 3. Apply correct bracket based on tax status
+    const status = form.taxStatus === "Married" ? "Married" : "Single";
+    const mainTax = applyBracket(chargeableIncome, status);
 
     return {
       mainTax,
@@ -213,8 +226,9 @@ export default function PersonalTaxCalculator() {
     };
   };
 
+  // ─── Main Calculate ──────────────────────────────────────────────────────
+
   const calculate = (): TaxCalculation => {
-    // 1. Zero State Check
     if (!form.grossSalary) {
       return {
         grossIncome: 0,
@@ -235,14 +249,10 @@ export default function PersonalTaxCalculator() {
     const partTime = Number.parseFloat(form.partTimeIncome) || 0;
 
     const { total: ssc, weekly: sscWeekly } = calculateSSC(grossSalary);
-
     const { mainTax, partTimeTax, totalTax, chargeableIncome } =
       calculateIncomeTax(grossSalary, partTime);
 
     const totalGross = grossSalary + partTime;
-
-    // Net Formula: (Gross + PartTime + Bonus) - Tax - SSC
-    // We add the bonus to the gross flow before subtracting outflows
     const netIncome = totalGross + GOV_BONUS - totalTax - ssc;
 
     return {
@@ -261,33 +271,36 @@ export default function PersonalTaxCalculator() {
   };
 
   const calculation = calculate();
+  const activeBrackets =
+    TAX_BRACKETS[form.taxStatus === "Married" ? "Married" : "Single"];
 
   return (
-    <div className="min-h-screen bg-white px-4 py-8 font-sans text-black lg:py-12 dark:bg-zinc-950 dark:text-zinc-100">
+    <div className="bg-background min-h-screen px-4 py-8 lg:py-12">
       <div className="mx-auto max-w-6xl">
         <div className="mb-8">
           <h1 className="mb-2 text-2xl font-bold tracking-tight sm:text-3xl">
             Personal Income Tax Calculator without Children
           </h1>
-          <p className="text-sm text-gray-500 sm:text-base dark:text-gray-400">
+          <p className="text-muted-foreground text-sm sm:text-base">
             For Individuals Without a Child
           </p>
         </div>
 
-        {/* Main Grid Layout */}
+        {/* Main Grid */}
         <div className="grid gap-8 lg:grid-cols-12">
-          {/* LEFT COLUMN: Inputs */}
+          {/* ── Left: Inputs ── */}
           <div className="space-y-6 lg:col-span-5">
-            <Card className="border-black shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-              <CardHeader>
+            <Card className="shadow-sm">
+              <CardHeader className="border-b">
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-black text-xs font-bold text-white dark:bg-white dark:text-black">
+                  <div className="bg-foreground text-background flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold">
                     {step}
                   </div>
                   Your Income Situation
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-5">
+              <CardContent className="space-y-5 pt-5">
+                {/* Gross Salary */}
                 <div className="space-y-2">
                   <Label>Annual Gross Salary (€)</Label>
                   <CurrencyInput
@@ -297,15 +310,16 @@ export default function PersonalTaxCalculator() {
                     onChange={(e) =>
                       handleChange("grossSalary", e.target.value)
                     }
-                    className={`h-10 w-full dark:bg-zinc-800 dark:text-white ${
-                      errors.grossSalary ? "border-red-500" : ""
-                    }`}
+                    className={`h-10 w-full ${errors.grossSalary ? "border-destructive" : ""}`}
                   />
                   {errors.grossSalary && (
-                    <p className="text-xs text-red-500">{errors.grossSalary}</p>
+                    <p className="text-destructive text-xs">
+                      {errors.grossSalary}
+                    </p>
                   )}
                 </div>
 
+                {/* Part-time Income */}
                 <AnimatePresence>
                   {step >= 2 && (
                     <motion.div
@@ -323,14 +337,13 @@ export default function PersonalTaxCalculator() {
                         onChange={(e) =>
                           handleChange("partTimeIncome", e.target.value)
                         }
-                        className={`h-10 w-full dark:bg-zinc-800 dark:text-white ${
-                          errors.partTimeIncome ? "border-red-500" : ""
-                        }`}
+                        className={`h-10 w-full ${errors.partTimeIncome ? "border-destructive" : ""}`}
                       />
                     </motion.div>
                   )}
                 </AnimatePresence>
 
+                {/* Part-time Type */}
                 <AnimatePresence>
                   {step >= 2 && Number.parseFloat(form.partTimeIncome) > 0 && (
                     <motion.div
@@ -343,10 +356,10 @@ export default function PersonalTaxCalculator() {
                         value={form.partTimeType}
                         onValueChange={(v) => handleChange("partTimeType", v)}
                       >
-                        <SelectTrigger className="w-full dark:bg-zinc-800 dark:text-white">
+                        <SelectTrigger className="w-full">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="dark:bg-zinc-800 dark:text-white">
+                        <SelectContent>
                           <SelectItem value="Employment">Employment</SelectItem>
                           <SelectItem value="Self-Employment">
                             Self-Employment
@@ -357,8 +370,9 @@ export default function PersonalTaxCalculator() {
                   )}
                 </AnimatePresence>
 
-                <Separator className="dark:bg-zinc-700" />
+                <Separator />
 
+                {/* Tax Status */}
                 <AnimatePresence>
                   {step >= 3 && (
                     <motion.div
@@ -371,10 +385,10 @@ export default function PersonalTaxCalculator() {
                         value={form.taxStatus}
                         onValueChange={(v) => handleChange("taxStatus", v)}
                       >
-                        <SelectTrigger className="w-full dark:bg-zinc-800 dark:text-white">
+                        <SelectTrigger className="w-full">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="dark:bg-zinc-800 dark:text-white">
+                        <SelectContent>
                           <SelectItem value="Single">Single</SelectItem>
                           <SelectItem value="Married">
                             Married with no Child
@@ -385,36 +399,9 @@ export default function PersonalTaxCalculator() {
                   )}
                 </AnimatePresence>
 
+                {/* SSC Status — step 4 (residencyStatus removed) */}
                 <AnimatePresence>
                   {step >= 4 && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      className="space-y-2"
-                    >
-                      <Label>Residency Status</Label>
-                      <Select
-                        value={form.residencyStatus}
-                        onValueChange={(v) =>
-                          handleChange("residencyStatus", v)
-                        }
-                      >
-                        <SelectTrigger className="w-full dark:bg-zinc-800 dark:text-white">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="dark:bg-zinc-800 dark:text-white">
-                          <SelectItem value="Resident">Resident</SelectItem>
-                          <SelectItem value="Non-Resident">
-                            Non-Resident
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                <AnimatePresence>
-                  {step >= 5 && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
@@ -425,10 +412,10 @@ export default function PersonalTaxCalculator() {
                         value={form.sscStatus}
                         onValueChange={(v) => handleChange("sscStatus", v)}
                       >
-                        <SelectTrigger className="w-full dark:bg-zinc-800 dark:text-white">
+                        <SelectTrigger className="w-full">
                           <SelectValue className="truncate" />
                         </SelectTrigger>
-                        <SelectContent className="dark:bg-zinc-800 dark:text-white">
+                        <SelectContent>
                           <SelectItem value="Student (under 18 years old)">
                             Student (under 18)
                           </SelectItem>
@@ -456,12 +443,12 @@ export default function PersonalTaxCalculator() {
             </Card>
           </div>
 
-          {/* RIGHT COLUMN: Results & Stats (Stacked) */}
+          {/* ── Right: Results ── */}
           <div className="space-y-6 lg:col-span-7">
-            {/* 1. Main Net Income Card */}
-            <Card className="border-black bg-black text-white dark:border-white dark:bg-white dark:text-black">
+            {/* Net Income Hero Card */}
+            <Card className="border-foreground bg-foreground text-background shadow-sm">
               <CardHeader className="pb-2">
-                <CardDescription className="text-gray-300 dark:text-gray-600">
+                <CardDescription className="text-muted-background opacity-70">
                   Earnings after tax
                 </CardDescription>
                 <CardTitle className="text-4xl font-bold sm:text-5xl">
@@ -469,15 +456,15 @@ export default function PersonalTaxCalculator() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="mt-2 grid grid-cols-2 gap-4 border-t border-gray-700 pt-4 text-sm dark:border-gray-200">
+                <div className="border-background/20 mt-2 grid grid-cols-2 gap-4 border-t pt-4 text-sm">
                   <div>
-                    <p className="text-gray-400 dark:text-gray-600">Monthly</p>
+                    <p className="opacity-60">Monthly</p>
                     <p className="text-lg font-medium">
                       €{formatCurrency(calculation.netIncome / 12)}
                     </p>
                   </div>
                   <div>
-                    <p className="text-gray-400 dark:text-gray-600">Weekly</p>
+                    <p className="opacity-60">Weekly</p>
                     <p className="text-lg font-medium">
                       €{formatCurrency(calculation.netIncome / 52)}
                     </p>
@@ -486,9 +473,9 @@ export default function PersonalTaxCalculator() {
               </CardContent>
             </Card>
 
-            {/* 2. Tax Obligations Summary (Moved here from bottom) */}
-            <Card className="overflow-hidden border-black shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-              <CardHeader className="border-b bg-gray-50 dark:border-zinc-800 dark:bg-zinc-800/50">
+            {/* Tax Obligations Table */}
+            <Card className="overflow-hidden shadow-sm">
+              <CardHeader className="border-b">
                 <CardTitle className="text-base font-semibold">
                   Tax Obligations Summary
                 </CardTitle>
@@ -497,7 +484,7 @@ export default function PersonalTaxCalculator() {
                 <div className="overflow-x-auto">
                   <Table className="min-w-[500px]">
                     <TableHeader>
-                      <TableRow className="dark:border-zinc-800">
+                      <TableRow>
                         <TableHead className="w-[40%] pl-6">
                           Description
                         </TableHead>
@@ -509,7 +496,7 @@ export default function PersonalTaxCalculator() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      <TableRow className="dark:border-zinc-800">
+                      <TableRow>
                         <TableCell className="pl-6 font-medium">
                           Gross Income
                         </TableCell>
@@ -523,7 +510,7 @@ export default function PersonalTaxCalculator() {
                           €{formatCurrency(calculation.grossIncome / 52)}
                         </TableCell>
                       </TableRow>
-                      <TableRow className="dark:border-zinc-800">
+                      <TableRow>
                         <TableCell className="pl-6 font-medium text-green-700 dark:text-green-400">
                           Government Bonus
                         </TableCell>
@@ -537,35 +524,35 @@ export default function PersonalTaxCalculator() {
                           +€{formatCurrency(calculation.govBonus / 52)}
                         </TableCell>
                       </TableRow>
-                      <TableRow className="dark:border-zinc-800">
-                        <TableCell className="pl-6 font-medium text-red-700 dark:text-red-400">
+                      <TableRow>
+                        <TableCell className="text-destructive pl-6 font-medium">
                           Total Tax
                         </TableCell>
-                        <TableCell className="text-right whitespace-nowrap text-red-700 dark:text-red-400">
+                        <TableCell className="text-destructive text-right whitespace-nowrap">
                           -€{formatCurrency(calculation.incomeTax)}
                         </TableCell>
-                        <TableCell className="text-right whitespace-nowrap text-red-700 dark:text-red-400">
+                        <TableCell className="text-destructive text-right whitespace-nowrap">
                           -€{formatCurrency(calculation.incomeTax / 12)}
                         </TableCell>
-                        <TableCell className="pr-6 text-right whitespace-nowrap text-red-700 dark:text-red-400">
+                        <TableCell className="text-destructive pr-6 text-right whitespace-nowrap">
                           -€{formatCurrency(calculation.incomeTax / 52)}
                         </TableCell>
                       </TableRow>
-                      <TableRow className="dark:border-zinc-800">
-                        <TableCell className="pl-6 font-medium text-red-700 dark:text-red-400">
+                      <TableRow>
+                        <TableCell className="text-destructive pl-6 font-medium">
                           Social Security
                         </TableCell>
-                        <TableCell className="text-right whitespace-nowrap text-red-700 dark:text-red-400">
+                        <TableCell className="text-destructive text-right whitespace-nowrap">
                           -€{formatCurrency(calculation.ssc)}
                         </TableCell>
-                        <TableCell className="text-right whitespace-nowrap text-red-700 dark:text-red-400">
+                        <TableCell className="text-destructive text-right whitespace-nowrap">
                           -€{formatCurrency(calculation.ssc / 12)}
                         </TableCell>
-                        <TableCell className="pr-6 text-right whitespace-nowrap text-red-700 dark:text-red-400">
+                        <TableCell className="text-destructive pr-6 text-right whitespace-nowrap">
                           -€{formatCurrency(calculation.ssc / 52)}
                         </TableCell>
                       </TableRow>
-                      <TableRow className="border-t-2 border-black bg-gray-100 font-bold dark:border-white dark:bg-zinc-800">
+                      <TableRow className="bg-muted border-t-2 font-bold">
                         <TableCell className="pl-6">Net Earnings</TableCell>
                         <TableCell className="text-right whitespace-nowrap">
                           €{formatCurrency(calculation.netIncome)}
@@ -585,36 +572,35 @@ export default function PersonalTaxCalculator() {
           </div>
         </div>
 
-        {/* Logic Accordion - Full Width Bottom */}
+        {/* ── Accordion: Calculation Logic ── */}
         <div className="mt-8">
           <Accordion
             type="single"
             collapsible
-            className="w-full rounded-lg border border-black bg-white px-4 dark:border-zinc-800 dark:bg-zinc-900"
+            className="bg-card w-full rounded-lg border px-4"
           >
             <AccordionItem value="logic" className="border-b-0">
               <AccordionTrigger className="text-sm font-semibold hover:no-underline">
-                View Calculation Logic & Formulas
+                View Calculation Logic &amp; Formulas
               </AccordionTrigger>
               <AccordionContent>
-                <div className="grid gap-8 border-t pt-4 lg:grid-cols-2 dark:border-zinc-800">
-                  {/* Logic Column 1: Tax */}
+                <div className="grid gap-8 border-t pt-4 lg:grid-cols-2">
+                  {/* Column 1: Income Tax */}
                   <div className="space-y-4">
                     <h3 className="font-bold underline">1. Income Tax Logic</h3>
-                    <div className="text-xs text-gray-600 dark:text-gray-400">
+                    <div className="text-muted-foreground text-xs">
                       <p>
-                        <strong>Basis:</strong>{" "}
-                        {form.residencyStatus === "Resident"
-                          ? `Resident (${form.taxStatus})`
-                          : "Non-Resident"}{" "}
-                        rates (2025 Budget).
+                        <strong className="text-foreground">Basis:</strong>{" "}
+                        {form.taxStatus === "Married" ? "Married" : "Single"}{" "}
+                        rates (2026 Tax Rates).
                       </p>
+
                       <div className="mt-2 space-y-2 rounded-md bg-blue-50 p-3 text-blue-900 dark:bg-blue-950/30 dark:text-blue-100">
                         <p className="font-semibold">
                           Chargeable Income Formula:
                         </p>
                         <p className="font-mono text-[11px]">
-                          Gross Salary + (Part-time - Threshold) + Gov Bonus
+                          Gross Salary + (Part-time − Threshold) + Gov Bonus
                         </p>
                         {Number.parseFloat(form.grossSalary) > 0 && (
                           <div className="border-t border-blue-200 pt-2 dark:border-blue-800">
@@ -636,147 +622,106 @@ export default function PersonalTaxCalculator() {
                           </div>
                         )}
                       </div>
+
                       <ul className="mt-2 list-disc space-y-1 pl-4">
                         <li>
-                          <strong>Main Tax Amount:</strong> €
-                          {formatCurrency(calculation.mainTax)} (Calculated on
+                          <strong className="text-foreground">
+                            Main Tax Amount:
+                          </strong>{" "}
+                          €{formatCurrency(calculation.mainTax)} (Calculated on
                           Chargeable Income)
                         </li>
                         {calculation.partTimeGross > 0 && (
-                          <>
-                            <li className="mt-2">
-                              <strong>Part-Time Flat Tax (10%):</strong>
-                              <br />
-                              Apply 10% on first €
-                              {form.partTimeType === "Employment"
-                                ? "10,000"
-                                : "12,000"}{" "}
-                              of part-time income.
-                              <br />
-                              Amount: €{formatCurrency(calculation.partTimeTax)}
-                            </li>
-                          </>
+                          <li className="mt-2">
+                            <strong className="text-foreground">
+                              Part-Time Flat Tax (10%):
+                            </strong>
+                            <br />
+                            Apply 10% on first €
+                            {form.partTimeType === "Employment"
+                              ? "10,000"
+                              : "12,000"}{" "}
+                            of part-time income.
+                            <br />
+                            Amount: €{formatCurrency(calculation.partTimeTax)}
+                          </li>
                         )}
                       </ul>
                     </div>
 
-                    {form.residencyStatus === "Resident" && (
-                      <Table className="border text-xs dark:border-zinc-700">
-                        <TableHeader className="bg-gray-100 dark:bg-zinc-800">
-                          <TableRow className="dark:border-zinc-700">
-                            <TableHead>Range (€)</TableHead>
-                            <TableHead>Rate</TableHead>
-                            <TableHead>Subtract (€)</TableHead>
+                    {/* Tax Brackets Table */}
+                    <Table className="border text-xs">
+                      <TableHeader className="bg-muted">
+                        <TableRow>
+                          <TableHead>Range (€)</TableHead>
+                          <TableHead>Rate</TableHead>
+                          <TableHead>Subtract (€)</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {activeBrackets.map((b, i) => (
+                          <TableRow key={i}>
+                            <TableCell>
+                              {b.to === Infinity
+                                ? `${b.from.toLocaleString()}+`
+                                : `${b.from.toLocaleString()} – ${b.to.toLocaleString()}`}
+                            </TableCell>
+                            <TableCell>{(b.rate * 100).toFixed(0)}%</TableCell>
+                            <TableCell>{b.subtract.toLocaleString()}</TableCell>
                           </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {form.taxStatus === "Married" ? (
-                            <>
-                              <TableRow className="dark:border-zinc-700">
-                                <TableCell>0 - 22,500</TableCell>
-                                <TableCell>0%</TableCell>
-                                <TableCell>0</TableCell>
-                              </TableRow>
-                              <TableRow className="dark:border-zinc-700">
-                                <TableCell>22,501 - 32,000</TableCell>
-                                <TableCell>15%</TableCell>
-                                <TableCell>3,375</TableCell>
-                              </TableRow>
-                              <TableRow className="dark:border-zinc-700">
-                                <TableCell>32,001 - 60,000</TableCell>
-                                <TableCell>25%</TableCell>
-                                <TableCell>6,575</TableCell>
-                              </TableRow>
-                              <TableRow className="dark:border-zinc-700">
-                                <TableCell>60,001+</TableCell>
-                                <TableCell>35%</TableCell>
-                                <TableCell>12,575</TableCell>
-                              </TableRow>
-                            </>
-                          ) : (
-                            <>
-                              <TableRow className="dark:border-zinc-700">
-                                <TableCell>0 - 17,500</TableCell>
-                                <TableCell>0%</TableCell>
-                                <TableCell>0</TableCell>
-                              </TableRow>
-                              <TableRow className="dark:border-zinc-700">
-                                <TableCell>17,501 - 26,500</TableCell>
-                                <TableCell>15%</TableCell>
-                                <TableCell>2,625</TableCell>
-                              </TableRow>
-                              <TableRow className="dark:border-zinc-700">
-                                <TableCell>26,501 - 60,000</TableCell>
-                                <TableCell>25%</TableCell>
-                                <TableCell>5,275</TableCell>
-                              </TableRow>
-                              <TableRow className="dark:border-zinc-700">
-                                <TableCell>60,001+</TableCell>
-                                <TableCell>35%</TableCell>
-                                <TableCell>11,275</TableCell>
-                              </TableRow>
-                            </>
-                          )}
-                        </TableBody>
-                      </Table>
-                    )}
+                        ))}
+                      </TableBody>
+                    </Table>
                   </div>
 
-                  {/* Logic Column 2: SSC & Bonuses */}
+                  {/* Column 2: SSC & Government Bonus */}
                   <div className="space-y-4">
                     <h3 className="font-bold underline">
                       2. Social Security (SSC)
                     </h3>
-                    <div className="text-xs text-gray-600 dark:text-gray-400">
+                    <div className="text-muted-foreground text-xs">
                       <p>
-                        <strong>Status:</strong> {form.sscStatus}
+                        <strong className="text-foreground">Status:</strong>{" "}
+                        {form.sscStatus}
                       </p>
                       <ul className="mt-2 list-disc space-y-1 pl-4">
                         <li>
-                          <strong>Weekly Gross (Main):</strong> €
-                          {formatCurrency(calculation.mainGross / 52)}
+                          <strong className="text-foreground">
+                            Weekly Gross (Main):
+                          </strong>{" "}
+                          €{formatCurrency(calculation.mainGross / 52)}
                         </li>
                         <li>
-                          <strong>Applicable SSC Rate:</strong> €
-                          {formatCurrency(calculation.sscWeekly)} / week
+                          <strong className="text-foreground">
+                            Applicable SSC Rate:
+                          </strong>{" "}
+                          €{formatCurrency(calculation.sscWeekly)} / week
                         </li>
                         <li>
-                          <strong>Annual SSC:</strong> €
-                          {formatCurrency(calculation.sscWeekly)} × 52 weeks = €
-                          {formatCurrency(calculation.ssc)}
+                          <strong className="text-foreground">
+                            Annual SSC:
+                          </strong>{" "}
+                          €{formatCurrency(calculation.sscWeekly)} × 52 weeks =
+                          €{formatCurrency(calculation.ssc)}
                         </li>
                       </ul>
-                      <div className="mt-4 rounded bg-gray-100 p-2 dark:bg-zinc-800">
-                        <p className="font-semibold">Logic Used:</p>
-                        {form.sscStatus.includes("Born on or after") && (
-                          <p className="mt-1 font-mono text-[10px]">
-                            IF(Weekly &le; 221.78, 22.18,
-                            <br />
-                            IF(Weekly &le; 544.28, 10%, 54.43))
-                          </p>
-                        )}
-                        {form.sscStatus.includes("Student") && (
-                          <p className="mt-1 font-mono text-[10px]">
-                            10% capped at €
-                            {form.sscStatus.includes("under") ? "4.38" : "7.94"}
-                          </p>
-                        )}
-                      </div>
                     </div>
 
-                    <Separator className="dark:bg-zinc-700" />
+                    <Separator />
 
                     <h3 className="font-bold underline">
                       3. Government Bonus (COLA)
                     </h3>
-                    <div className="text-xs text-gray-600 dark:text-gray-400">
+                    <div className="text-muted-foreground text-xs">
                       <p>Fixed quarterly allowances added to Net Income:</p>
                       <ul className="mt-2 list-disc space-y-1 pl-4">
                         <li>March: €121.36</li>
                         <li>June: €135.10</li>
                         <li>September: €121.16</li>
                         <li>December: €135.10</li>
-                        <li className="font-bold">Total: €512.72</li>
+                        <li className="text-foreground font-bold">
+                          Total: €512.72
+                        </li>
                       </ul>
                     </div>
                   </div>

@@ -245,7 +245,7 @@ export const MobileNavToggle = ({
 
 export const NavbarLogo = () => {
   return (
-    <Link href="/">
+    <Link href="/" className="z-10">
       <div className="relative h-7 w-24 rounded-xs bg-none p-2 md:h-10 md:w-42 dark:bg-gray-100">
         <Image src="/ciptaxpro.svg" alt="CipTaxPro" fill />
       </div>
