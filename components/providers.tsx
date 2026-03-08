@@ -1,32 +1,24 @@
 "use client";
-import { PropsWithChildren, useEffect, useState } from "react";
+import { PropsWithChildren } from "react";
 import Noise from "./ui/noise";
 import { Toaster } from "./ui/sonner";
 import { ThemeProvider } from "next-themes";
-// import { ScrollProgress } from "./ui/scroll-progress";
+import { CountryProvider } from "@/context/country-context";
 
 export const Providers = ({ children }: PropsWithChildren) => {
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  if (!isMounted) return null;
-
   return (
-    <>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <CountryProvider>
         {children}
-        <Noise
-          patternSize={250}
-          patternScaleX={1}
-          patternScaleY={1}
-          patternRefreshInterval={2}
-          patternAlpha={15}
-        />
-        <Toaster />
-      </ThemeProvider>
-    </>
+      </CountryProvider>
+      <Noise
+        patternSize={250}
+        patternScaleX={1}
+        patternScaleY={1}
+        patternRefreshInterval={2}
+        patternAlpha={15}
+      />
+      <Toaster />
+    </ThemeProvider>
   );
 };

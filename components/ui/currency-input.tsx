@@ -8,6 +8,7 @@ type NativeInputProps = React.ComponentProps<"input">;
 export interface CurrencyInputProps
   extends Omit<NativeInputProps, "onChange" | "value"> {
   value: string; // raw numeric string, e.g. "1000" or "1234.5"
+  symbol?: string;
   /**
    * Event-style handler (keeps your existing usage):
    * onChange={(e) => handleChange("taxAmount", e.target.value)}
@@ -68,6 +69,7 @@ export function CurrencyInput({
   placeholder = "0.00",
   className,
   hasError,
+  symbol = "€",
   ...props
 }: CurrencyInputProps) {
   // Keep display state: when focused -> raw (no commas, no forced .00)
@@ -148,7 +150,7 @@ export function CurrencyInput({
   return (
     <div className="relative">
       <span className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2">
-        €
+        {symbol}
       </span>
       <Input
         {...(props as React.ComponentProps<"input">)}

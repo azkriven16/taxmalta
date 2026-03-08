@@ -101,10 +101,10 @@ export function HeroSection() {
             </span>
           </ShimmerButton>
           <div className="mt-10 grid max-w-7xl grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-            {features.map((feature, idx) => {
+            {features.map((feature) => {
               return (
                 <div
-                  key={idx}
+                  key={feature.title}
                   className={`bg-secondary border border-r-0 p-6 transition-shadow last:border-r hover:shadow-md`}
                 >
                   <div className="flex justify-around">

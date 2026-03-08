@@ -1,6 +1,13 @@
+import type { Metadata } from "next";
 import { CalculatorsSection } from "@/components/sections/calculators-section";
 import { FaqSection } from "@/components/sections/faq-section";
 import { HeroSection } from "@/components/sections/hero-section";
+
+export const metadata: Metadata = {
+  title: "Free Malta Tax & Compliance Calculators",
+  description:
+    "Instant, reliable estimates for your Malta personal income tax, rental earnings, late penalties, and audit exemptions. 100% private, in-browser calculations with no sign-in required.",
+};
 
 export default function Page() {
   return (
