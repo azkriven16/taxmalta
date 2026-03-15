@@ -84,4 +84,46 @@ const phCalculators = [
     link: "/calculators/ph-professional-tax",
     image: "/images/ph-professional-tax-calculator.svg",
   },
+  {
+    title: "MP2 Investment Calculator",
+    description:
+      "Project your Modified Pag-IBIG 2 savings over the 5-year maturity period using actual historical dividend rates. Compare Annual Payout vs. Compounded modes to see your total earnings.",
+    link: "/calculators/mp2-investment",
+    image: "/images/ph-professional-tax-calculator.svg",
+  },
+  {
+    title: "Home Loan Applied to Principal Calculator",
+    description:
+      "See how paying extra monthly towards your principal reduces your loan term and saves interest. Find out how long it takes to pay off your loan, or how much you need to pay to finish by a target date.",
+    link: "/calculators/home-loan-principal",
+    image: "/images/ph-professional-tax-calculator.svg",
+  },
+  {
+    title: "BIR Form 2316 Validation Calculator",
+    description:
+      "Validate the withholding tax on your BIR Form 2316. Compute your correct tax due including de minimis benefits, government contributions, and the ₱90,000 13th month pay ceiling. Check if you were over or underwithheld.",
+    link: "/calculators/bir-2316-validation",
+    image: "/images/ph-professional-tax-calculator.svg",
+  },
+  {
+    title: "Year-End Tax Adjustment Calculator",
+    description:
+      "Consolidate compensation income from up to 4 employers and compute your annual income tax for 2026. See your total tax due vs. total withheld to find out if you are owed a refund or have additional tax to pay.",
+    link: "/calculators/ph-year-end-tax",
+    image: "/images/ph-professional-tax-calculator.svg",
+  },
+  {
+    title: "Withholding Tax Validation Calculator",
+    description:
+      "Compute your per-payslip withholding tax for 2026. Supports Private and Government employees on Weekly, Semi-Monthly, or Monthly payroll. Automatically deducts SSS/GSIS, PhilHealth, and Pag-IBIG contributions.",
+    link: "/calculators/ph-withholding-tax",
+    image: "/images/ph-professional-tax-calculator.svg",
+  },
+  {
+    title: "MP2 Ladder Investment Calculator",
+    description:
+      "Open up to 5 MP2 accounts, each starting one year apart. See combined projections, per-account maturity dates, and a year-by-year dividend breakdown across your entire ladder.",
+    link: "/calculators/mp2-ladder",
+    image: "/images/ph-professional-tax-calculator.svg",
+  },
 ];

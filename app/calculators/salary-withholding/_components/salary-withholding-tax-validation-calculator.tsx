@@ -615,7 +615,7 @@ export default function WithholdingTaxCalculator() {
                         "Divide the annual tax by the same period factor, then round to 2 decimal places.",
                       ],
                     ].map(([step, desc], i) => (
-                      <li key={i} className="flex gap-3">
+                      <li key={step} className="flex gap-3">
                         <span className="bg-muted text-foreground flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-xs font-bold">
                           {i + 1}
                         </span>

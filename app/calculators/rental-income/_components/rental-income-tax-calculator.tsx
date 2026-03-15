@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -12,13 +12,22 @@ import {
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { InfoIcon } from "lucide-react";
+import { InfoIcon, RotateCcw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+function formatCurrency(value: number) {
+  return value.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
 
 interface FormState {
   rentalIncome: string;
@@ -28,82 +37,95 @@ interface FormState {
   licenseFees: string;
 }
 
+const DEFAULT_FORM: FormState = {
+  rentalIncome: "",
+  optedFor15Percent: "",
+  interestPaid: "",
+  rentGroundRent: "",
+  licenseFees: "",
+};
+
 export default function RentalIncomeCalculator() {
-  const [form, setForm] = useState<FormState>({
-    rentalIncome: "",
-    optedFor15Percent: "",
-    interestPaid: "",
-    rentGroundRent: "",
-    licenseFees: "",
-  });
+  const [form, setForm] = useState<FormState>(DEFAULT_FORM);
 
-  const handleChange = (field: keyof FormState, value: string) => {
-    setForm({ ...form, [field]: value });
-  };
+  const handleChange = useCallback((field: keyof FormState, value: string) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  }, []);
 
-  // Parse currency values
-  const rentalIncome = Number.parseFloat(form.rentalIncome) || 0;
-  const interestPaid = Number.parseFloat(form.interestPaid) || 0;
-  const rentGroundRent = Number.parseFloat(form.rentGroundRent) || 0;
-  const licenseFees = Number.parseFloat(form.licenseFees) || 0;
+  const resetForm = useCallback(() => {
+    setForm(DEFAULT_FORM);
+  }, []);
 
-  // Formula: =MAX(0,MIN(0.2*(C8-C12-C13),C8-C11-C12-C13))
-  // 20% Maintenance Allowance = MAX(0, MIN(0.2*(rentalIncome-rentGroundRent-licenseFees), rentalIncome-interestPaid-rentGroundRent-licenseFees))
-  const maintenanceAllowance = Math.max(
-    0,
-    Math.min(
-      0.2 * (rentalIncome - rentGroundRent - licenseFees),
-      rentalIncome - interestPaid - rentGroundRent - licenseFees,
-    ),
-  );
+  const {
+    maintenanceAllowance,
+    regularTaxableIncome,
+    regularTaxPayable,
+    finalTaxableIncome,
+    finalTaxPayable,
+    recommendation,
+    winner,
+  } = useMemo(() => {
+    // Parse currency values
+    const rentalIncome = Number.parseFloat(form.rentalIncome) || 0;
+    const interestPaid = Number.parseFloat(form.interestPaid) || 0;
+    const rentGroundRent = Number.parseFloat(form.rentGroundRent) || 0;
+    const licenseFees = Number.parseFloat(form.licenseFees) || 0;
 
-  // Regular Tax Rate Calculations
-  // Formula: =MAX(0,(C8-C11-C13-C12-C14))
-  // Taxable Income = rentalIncome - interestPaid - licenseFees - rentGroundRent - maintenanceAllowance
-  const regularTaxableIncome = Math.max(
-    0,
-    rentalIncome -
-      interestPaid -
-      licenseFees -
-      rentGroundRent -
+    // Formula: =MAX(0,MIN(0.2*(C8-C12-C13),C8-C11-C12-C13))
+    const maintenanceAllowance = Math.max(
+      0,
+      Math.min(
+        0.2 * (rentalIncome - rentGroundRent - licenseFees),
+        rentalIncome - interestPaid - rentGroundRent - licenseFees,
+      ),
+    );
+
+    // Regular Tax Rate Calculations
+    const regularTaxableIncome = Math.max(
+      0,
+      rentalIncome -
+        interestPaid -
+        licenseFees -
+        rentGroundRent -
+        maintenanceAllowance,
+    );
+    const regularTaxPayable = Math.round(regularTaxableIncome * 0.35);
+
+    // 15% Final Tax Rate Calculations
+    const finalTaxableIncome = rentalIncome;
+    const finalTaxPayable = Math.round(finalTaxableIncome * 0.15);
+
+    // Determine recommendation
+    let recommendation: string | null = null;
+    if (rentalIncome && form.optedFor15Percent !== "Not Applicable") {
+      if (form.optedFor15Percent === "Yes") {
+        recommendation = "You have opted for the 15% final tax rate. This will apply to your total rental income.";
+      } else if (regularTaxPayable < finalTaxPayable) {
+        recommendation = "Based on the above calculation, the most tax-efficient option for your passive rental income is to stick with the regular corporate tax.";
+      } else if (finalTaxPayable < regularTaxPayable) {
+        recommendation = "Based on the above calculation, the most tax-efficient option for your passive rental income is to opt for the 15% final tax rate.";
+      } else {
+        recommendation = "Both tax options result in the same tax liability.";
+      }
+    }
+
+    let winner: "regular" | "final" | "tie" | null = null;
+    if (rentalIncome > 0) {
+      if (regularTaxPayable < finalTaxPayable) winner = "regular";
+      else if (finalTaxPayable < regularTaxPayable) winner = "final";
+      else winner = "tie";
+    }
+
+    return {
       maintenanceAllowance,
-  );
-
-  // Formula: =ROUND(F9*IF(C9="Yes",0.15,0.35),0)
-  // Tax rate is 35% for individual taxpayer (maximum tax rate)
-  const regularTaxPayable = Math.round(regularTaxableIncome * 0.35);
-
-  // 15% Final Tax Rate Calculations
-  // Formula: =ROUND(F13*0.15,0)
-  // Taxable Income = full rental income (no deductions)
-  const finalTaxableIncome = rentalIncome;
-  const finalTaxPayable = Math.round(finalTaxableIncome * 0.15);
-
-  // Determine recommendation
-  const getRecommendation = () => {
-    if (!rentalIncome || form.optedFor15Percent === "Not Applicable") {
-      return null;
-    }
-
-    if (form.optedFor15Percent === "Yes") {
-      return "You have opted for the 15% final tax rate. This will apply to your total rental income.";
-    }
-
-    if (regularTaxPayable < finalTaxPayable) {
-      return "Based on the above calculation, the most tax-efficient option for your passive rental income is to stick with the regular corporate tax.";
-    } else if (finalTaxPayable < regularTaxPayable) {
-      return "Based on the above calculation, the most tax-efficient option for your passive rental income is to opt for the 15% final tax rate.";
-    } else {
-      return "Both tax options result in the same tax liability.";
-    }
-  };
-
-  const formatCurrency = (value: number) => {
-    return value.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-  };
+      regularTaxableIncome,
+      regularTaxPayable,
+      finalTaxableIncome,
+      finalTaxPayable,
+      recommendation,
+      winner,
+    };
+  }, [form]);
 
   return (
     <div className="bg-background min-h-screen">
@@ -126,10 +148,23 @@ export default function RentalIncomeCalculator() {
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Left Column - Your Tax Profile */}
           <Card className="shadow-sm">
-            <CardHeader className="bg-muted/50 border-b">
-              <CardTitle className="text-lg font-semibold">
-                Your Tax Profile
-              </CardTitle>
+            <CardHeader className="border-b">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-semibold">
+                  Your Tax Profile
+                </CardTitle>
+                {form.rentalIncome && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={resetForm}
+                    className="h-7 gap-1 px-2 text-xs text-muted-foreground"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    Reset
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="space-y-6 pt-6">
               {/* Rental Income */}
@@ -233,10 +268,15 @@ export default function RentalIncomeCalculator() {
           <div className="space-y-6">
             {/* Regular Tax Rate */}
             <Card className="shadow-sm">
-              <CardHeader className="bg-muted/50 border-b">
-                <CardTitle className="text-lg font-semibold">
-                  Regular Tax Rate
-                </CardTitle>
+              <CardHeader className={winner === "regular" ? "border-b bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900" : "border-b"}>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg font-semibold">
+                    Regular Tax Rate
+                  </CardTitle>
+                  {winner === "regular" && (
+                    <Badge className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 text-xs">✓ Recommended</Badge>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="space-y-4 pt-6">
                 <div className="flex items-center justify-between">
@@ -251,6 +291,14 @@ export default function RentalIncomeCalculator() {
                     € {formatCurrency(regularTaxPayable)}
                   </span>
                 </div>
+                <p className="text-muted-foreground text-xs">
+                  Effective rate: {(regularTaxPayable / Math.max(regularTaxableIncome, 1) * 100).toFixed(1)}%
+                </p>
+                {winner === "final" && (
+                  <p className="text-green-600 text-xs font-medium">
+                    Saves €{formatCurrency(Math.abs(regularTaxPayable - finalTaxPayable))} vs this option
+                  </p>
+                )}
                 <p className="text-muted-foreground pt-2 text-xs italic">
                   *Computed based on the maximum tax rate of 35% income tax for
                   individual taxpayer
@@ -260,10 +308,15 @@ export default function RentalIncomeCalculator() {
 
             {/* 15% Final Tax Rate */}
             <Card className="shadow-sm">
-              <CardHeader className="bg-primary/10 border-primary/20 border-b">
-                <CardTitle className="text-primary text-lg font-semibold">
-                  15% Final Tax Rate
-                </CardTitle>
+              <CardHeader className={winner === "final" ? "border-b bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900" : "bg-primary/10 border-primary/20 border-b"}>
+                <div className="flex items-center justify-between">
+                  <CardTitle className={winner === "final" ? "text-lg font-semibold" : "text-primary text-lg font-semibold"}>
+                    15% Final Tax Rate
+                  </CardTitle>
+                  {winner === "final" && (
+                    <Badge className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 text-xs">✓ Recommended</Badge>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="space-y-4 pt-6">
                 <div className="flex items-center justify-between">
@@ -278,15 +331,23 @@ export default function RentalIncomeCalculator() {
                     € {formatCurrency(finalTaxPayable)}
                   </span>
                 </div>
+                <p className="text-muted-foreground text-xs">
+                  Effective rate: 15.0%
+                </p>
+                {winner === "regular" && (
+                  <p className="text-green-600 text-xs font-medium">
+                    Saves €{formatCurrency(Math.abs(finalTaxPayable - regularTaxPayable))} vs this option
+                  </p>
+                )}
               </CardContent>
             </Card>
 
             {/* Recommendation */}
-            {getRecommendation() && (
+            {recommendation && (
               <Alert className="border-primary/20 bg-primary/10">
                 <InfoIcon className="text-primary h-4 w-4" />
                 <AlertDescription className="text-sm">
-                  {getRecommendation()}
+                  {recommendation}
                 </AlertDescription>
               </Alert>
             )}

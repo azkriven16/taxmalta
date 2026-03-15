@@ -9,8 +9,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AnimatePresence, motion } from "framer-motion";
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { formatCurrency } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { RotateCcw } from "lucide-react";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import {
   Accordion,
@@ -99,16 +101,74 @@ function applyBracket(income: number, status: "Single" | "Married"): number {
   return Math.max(0, income * bracket.rate - bracket.subtract);
 }
 
+function calculateSSC(
+  annualGross: number,
+  sscStatus: string,
+): { weekly: number; total: number } {
+  const weeklyGross = annualGross / 52;
+  if (sscStatus === "Exempt from paying NI/SSC") return { weekly: 0, total: 0 };
+  if (sscStatus === "Student (under 18 years old)") {
+    const val = Math.min(weeklyGross * 0.1, 4.38);
+    return { weekly: val, total: val * 52 };
+  }
+  if (sscStatus === "Student (18 years old and over)") {
+    const val = Math.min(weeklyGross * 0.1, 7.94);
+    return { weekly: val, total: val * 52 };
+  }
+  let weeklySSC = 0;
+  if (sscStatus === "Employed (under 18 years old)") {
+    if (weeklyGross <= 221.78) weeklySSC = 6.62;
+    else if (weeklyGross <= 544.28) weeklySSC = weeklyGross * 0.1;
+    else weeklySSC = 54.43;
+  } else if (
+    sscStatus ===
+    "Employed (18 years old and over, born on or before 31 Dec 1961)"
+  ) {
+    if (weeklyGross <= 221.78) weeklySSC = 22.18;
+    else if (weeklyGross <= 451.91) weeklySSC = weeklyGross * 0.1;
+    else weeklySSC = 45.19;
+  } else {
+    if (weeklyGross <= 221.78) weeklySSC = 22.18;
+    else if (weeklyGross <= 544.28) weeklySSC = weeklyGross * 0.1;
+    else weeklySSC = 54.43;
+  }
+  return { weekly: weeklySSC, total: weeklySSC * 52 };
+}
+
+function calculateIncomeTax(
+  salary: number,
+  partTime: number,
+  partTimeType: string,
+  taxStatus: string,
+): { mainTax: number; partTimeTax: number; totalTax: number; chargeableIncome: number } {
+  let partTimeTax = 0;
+  let excessPartTime = 0;
+  if (partTime > 0) {
+    const threshold = partTimeType === "Employment" ? 10000 : 12000;
+    const taxableAtFlat = Math.min(partTime, threshold);
+    partTimeTax = taxableAtFlat * 0.1;
+    excessPartTime = Math.max(0, partTime - threshold);
+  }
+  const chargeableIncome = salary + excessPartTime + GOV_BONUS;
+  const status = taxStatus === "Married" ? "Married" : "Single";
+  const mainTax = applyBracket(chargeableIncome, status);
+  return { mainTax, partTimeTax, totalTax: mainTax + partTimeTax, chargeableIncome };
+}
+
+// ─── Constants ────────────────────────────────────────────────────────────
+
+const DEFAULT_FORM: FormState = {
+  grossSalary: "",
+  partTimeIncome: "",
+  partTimeType: "Employment",
+  taxStatus: "Single",
+  sscStatus: "Employed (18 years old and over, born on or after 1 Jan 1962)",
+};
+
 // ─── Component ────────────────────────────────────────────────────────────
 
 export default function PersonalTaxCalculator() {
-  const [form, setForm] = useState<FormState>({
-    grossSalary: "",
-    partTimeIncome: "",
-    partTimeType: "Employment",
-    taxStatus: "Single",
-    sscStatus: "Employed (18 years old and over, born on or after 1 Jan 1962)",
-  });
+  const [form, setForm] = useState<FormState>(DEFAULT_FORM);
 
   const [errors, setErrors] = useState<ErrorState>({});
 
@@ -127,134 +187,41 @@ export default function PersonalTaxCalculator() {
 
   const step = computeStep(form);
 
-  const validateField = (field: string, value: string): void => {
-    const newErrors = { ...errors };
-    if (
-      (field === "grossSalary" || field === "partTimeIncome") &&
-      value &&
-      !isValidAmount(value)
-    ) {
-      newErrors[field] = "Please enter a valid amount";
-    } else {
-      delete newErrors[field];
-    }
-    setErrors(newErrors);
-  };
+  const resetForm = useCallback(() => {
+    setForm(DEFAULT_FORM);
+    setErrors({});
+  }, []);
 
-  const handleChange = (field: keyof FormState, value: string): void => {
+  const handleChange = useCallback((field: keyof FormState, value: string): void => {
     setForm((prev) => ({ ...prev, [field]: value }));
-    validateField(field, value);
-  };
+    const isAmountField = field === "grossSalary" || field === "partTimeIncome";
+    setErrors((prev) => {
+      if (isAmountField && value && !isValidAmount(value)) {
+        return { ...prev, [field]: "Please enter a valid amount" };
+      }
+      if (prev[field]) {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      }
+      return prev;
+    });
+  }, []);
 
-  // ─── SSC Calculation ────────────────────────────────────────────────────
-
-  const calculateSSC = (
-    annualGross: number,
-  ): { weekly: number; total: number } => {
-    const weeklyGross = annualGross / 52;
-
-    if (form.sscStatus === "Exempt from paying NI/SSC") {
-      return { weekly: 0, total: 0 };
-    }
-    if (form.sscStatus === "Student (under 18 years old)") {
-      const val = Math.min(weeklyGross * 0.1, 4.38);
-      return { weekly: val, total: val * 52 };
-    }
-    if (form.sscStatus === "Student (18 years old and over)") {
-      const val = Math.min(weeklyGross * 0.1, 7.94);
-      return { weekly: val, total: val * 52 };
-    }
-
-    let weeklySSC = 0;
-    if (form.sscStatus === "Employed (under 18 years old)") {
-      if (weeklyGross <= 221.78) weeklySSC = 6.62;
-      else if (weeklyGross <= 544.28) weeklySSC = weeklyGross * 0.1;
-      else weeklySSC = 54.43;
-    } else if (
-      form.sscStatus ===
-      "Employed (18 years old and over, born on or before 31 Dec 1961)"
-    ) {
-      if (weeklyGross <= 221.78) weeklySSC = 22.18;
-      else if (weeklyGross <= 451.91) weeklySSC = weeklyGross * 0.1;
-      else weeklySSC = 45.19;
-    } else {
-      // Born on or after 1 Jan 1962
-      if (weeklyGross <= 221.78) weeklySSC = 22.18;
-      else if (weeklyGross <= 544.28) weeklySSC = weeklyGross * 0.1;
-      else weeklySSC = 54.43;
-    }
-
-    return { weekly: weeklySSC, total: weeklySSC * 52 };
-  };
-
-  // ─── Income Tax Calculation ──────────────────────────────────────────────
-  // Uses corrected brackets from image feedback.
-  // Single → Single Rates table; Married → Married Rates table.
-
-  const calculateIncomeTax = (
-    salary: number,
-    partTime: number,
-  ): {
-    mainTax: number;
-    partTimeTax: number;
-    totalTax: number;
-    chargeableIncome: number;
-  } => {
-    // 1. Part-time flat tax (10%) up to threshold
-    let partTimeTax = 0;
-    let excessPartTime = 0;
-
-    if (partTime > 0) {
-      const threshold = form.partTimeType === "Employment" ? 10000 : 12000;
-      const taxableAtFlat = Math.min(partTime, threshold);
-      partTimeTax = taxableAtFlat * 0.1;
-      excessPartTime = Math.max(0, partTime - threshold);
-    }
-
-    // 2. Chargeable income = Gross Salary + excess part-time + Gov Bonus
-    const chargeableIncome = salary + excessPartTime + GOV_BONUS;
-
-    // 3. Apply correct bracket based on tax status
-    const status = form.taxStatus === "Married" ? "Married" : "Single";
-    const mainTax = applyBracket(chargeableIncome, status);
-
-    return {
-      mainTax,
-      partTimeTax,
-      totalTax: mainTax + partTimeTax,
-      chargeableIncome,
-    };
-  };
-
-  // ─── Main Calculate ──────────────────────────────────────────────────────
-
-  const calculate = (): TaxCalculation => {
+  const calculation = useMemo((): TaxCalculation => {
     if (!form.grossSalary) {
       return {
-        grossIncome: 0,
-        mainGross: 0,
-        partTimeGross: 0,
-        taxableIncome: 0,
-        incomeTax: 0,
-        mainTax: 0,
-        partTimeTax: 0,
-        ssc: 0,
-        sscWeekly: 0,
-        govBonus: 0,
-        netIncome: 0,
+        grossIncome: 0, mainGross: 0, partTimeGross: 0, taxableIncome: 0,
+        incomeTax: 0, mainTax: 0, partTimeTax: 0, ssc: 0, sscWeekly: 0,
+        govBonus: 0, netIncome: 0,
       };
     }
-
     const grossSalary = Number.parseFloat(form.grossSalary) || 0;
     const partTime = Number.parseFloat(form.partTimeIncome) || 0;
-
-    const { total: ssc, weekly: sscWeekly } = calculateSSC(grossSalary);
+    const { total: ssc, weekly: sscWeekly } = calculateSSC(grossSalary, form.sscStatus);
     const { mainTax, partTimeTax, totalTax, chargeableIncome } =
-      calculateIncomeTax(grossSalary, partTime);
-
+      calculateIncomeTax(grossSalary, partTime, form.partTimeType, form.taxStatus);
     const totalGross = grossSalary + partTime;
-    const netIncome = totalGross + GOV_BONUS - totalTax - ssc;
-
     return {
       grossIncome: totalGross,
       mainGross: grossSalary,
@@ -266,13 +233,11 @@ export default function PersonalTaxCalculator() {
       ssc,
       sscWeekly,
       govBonus: GOV_BONUS,
-      netIncome,
+      netIncome: totalGross + GOV_BONUS - totalTax - ssc,
     };
-  };
+  }, [form]);
 
-  const calculation = calculate();
-  const activeBrackets =
-    TAX_BRACKETS[form.taxStatus === "Married" ? "Married" : "Single"];
+  const activeBrackets = TAX_BRACKETS[form.taxStatus === "Married" ? "Married" : "Single"];
 
   return (
     <div className="bg-background min-h-screen px-4 py-8 lg:py-12">
@@ -292,12 +257,25 @@ export default function PersonalTaxCalculator() {
           <div className="space-y-6 lg:col-span-5">
             <Card className="shadow-sm">
               <CardHeader className="border-b">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <div className="bg-foreground text-background flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold">
-                    {step}
-                  </div>
-                  Your Income Situation
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <div className="bg-foreground text-background flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold">
+                      {step}
+                    </div>
+                    Your Income Situation
+                  </CardTitle>
+                  {form.grossSalary && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={resetForm}
+                      className="h-7 gap-1 px-2 text-xs text-muted-foreground"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                      Reset
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="space-y-5 pt-5">
                 {/* Gross Salary */}
@@ -470,6 +448,45 @@ export default function PersonalTaxCalculator() {
                     </p>
                   </div>
                 </div>
+                <div className="border-background/20 mt-1 flex gap-4 border-t pt-3 opacity-60 text-xs">
+                  <span>
+                    Effective tax rate:{" "}
+                    {(calculation.incomeTax / Math.max(calculation.grossIncome + calculation.govBonus, 1) * 100).toFixed(1)}%
+                  </span>
+                  <span>
+                    Take-home:{" "}
+                    {(calculation.netIncome / Math.max(calculation.grossIncome + calculation.govBonus, 1) * 100).toFixed(1)}%
+                  </span>
+                </div>
+                {calculation.grossIncome > 0 && (() => {
+                  const total = calculation.grossIncome + calculation.govBonus;
+                  const netPct = (calculation.netIncome / total * 100).toFixed(1);
+                  const taxPct = (calculation.incomeTax / total * 100).toFixed(1);
+                  const sscPct = (calculation.ssc / total * 100).toFixed(1);
+                  return (
+                    <>
+                      <div className="mt-3 flex h-2 w-full overflow-hidden rounded-full">
+                        <div className="bg-green-400" style={{ width: `${netPct}%` }} />
+                        <div className="bg-red-400" style={{ width: `${taxPct}%` }} />
+                        <div className="bg-orange-400" style={{ width: `${sscPct}%` }} />
+                      </div>
+                      <div className="mt-1.5 flex gap-3 opacity-60 text-xs">
+                        <span className="flex items-center gap-1">
+                          <span className="inline-block h-2 w-2 rounded-full bg-green-400" />
+                          Net {netPct}%
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <span className="inline-block h-2 w-2 rounded-full bg-red-400" />
+                          Tax {taxPct}%
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <span className="inline-block h-2 w-2 rounded-full bg-orange-400" />
+                          SSC {sscPct}%
+                        </span>
+                      </div>
+                    </>
+                  );
+                })()}
               </CardContent>
             </Card>
 
@@ -659,8 +676,8 @@ export default function PersonalTaxCalculator() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {activeBrackets.map((b, i) => (
-                          <TableRow key={i}>
+                        {activeBrackets.map((b) => (
+                          <TableRow key={b.from}>
                             <TableCell>
                               {b.to === Infinity
                                 ? `${b.from.toLocaleString()}+`

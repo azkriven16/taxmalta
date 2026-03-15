@@ -1,4 +1,5 @@
 "use client";
+
 import { cn } from "@/lib/utils";
 import {
   AnimatePresence,
@@ -9,8 +10,18 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import React, { useRef, useState } from "react";
+import React, { createContext, useContext, useRef, useState } from "react";
 import { HiOutlineBars3, HiOutlineXMark } from "react-icons/hi2";
+
+// ─── Context ──────────────────────────────────────────────────────────────
+
+const NavbarContext = createContext<{ visible: boolean }>({ visible: false });
+
+function useNavbar() {
+  return useContext(NavbarContext);
+}
+
+// ─── Types ────────────────────────────────────────────────────────────────
 
 interface NavbarProps {
   children: React.ReactNode;
@@ -20,14 +31,10 @@ interface NavbarProps {
 interface NavBodyProps {
   children: React.ReactNode;
   className?: string;
-  visible?: boolean;
 }
 
 interface NavItemsProps {
-  items: {
-    name: string;
-    link: string;
-  }[];
+  items: { name: string; link: string }[];
   className?: string;
   onItemClick?: () => void;
 }
@@ -35,7 +42,6 @@ interface NavItemsProps {
 interface MobileNavProps {
   children: React.ReactNode;
   className?: string;
-  visible?: boolean;
 }
 
 interface MobileNavHeaderProps {
@@ -50,59 +56,50 @@ interface MobileNavMenuProps {
   onClose: () => void;
 }
 
+// ─── Transition presets ───────────────────────────────────────────────────
+
+// Width must use tween — spring physics on layout properties cause reflow jank.
+const WIDTH_TRANSITION = {
+  width: { type: "tween", ease: [0.4, 0, 0.2, 1], duration: 0.35 },
+  y: { type: "tween", ease: [0.4, 0, 0.2, 1], duration: 0.25 },
+  backdropFilter: { type: "tween", ease: "easeOut", duration: 0.25 },
+  boxShadow: { type: "tween", ease: "easeOut", duration: 0.25 },
+} as const;
+
+// ─── Components ───────────────────────────────────────────────────────────
+
 export const Navbar = ({ children, className }: NavbarProps) => {
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollY } = useScroll({
-    target: ref,
-    offset: ["start start", "end start"],
-  });
-  const [visible, setVisible] = useState<boolean>(false);
+  const { scrollY } = useScroll(); // tracks window scroll
+  const [visible, setVisible] = useState(false);
 
   useMotionValueEvent(scrollY, "change", (latest) => {
-    if (latest > 50) {
-      setVisible(true);
-    } else {
-      setVisible(false);
-    }
+    setVisible(latest > 50);
   });
 
   return (
-    <motion.div
-      ref={ref}
-      // IMPORTANT: Change this to class of `fixed` if you want the navbar to be fixed
-      className={cn("sticky inset-x-0 top-20 z-40 w-full", className)}
-    >
-      {React.Children.map(children, (child) =>
-        React.isValidElement(child)
-          ? React.cloneElement(
-              child as React.ReactElement<{ visible?: boolean }>,
-              { visible },
-            )
-          : child,
-      )}
-    </motion.div>
+    <NavbarContext.Provider value={{ visible }}>
+      <div className={cn("fixed inset-x-0 top-0 z-40 lg:top-5", className)}>
+        {children}
+      </div>
+    </NavbarContext.Provider>
   );
 };
 
-export const NavBody = ({ children, className, visible }: NavBodyProps) => {
+export const NavBody = ({ children, className }: NavBodyProps) => {
+  const { visible } = useNavbar();
+
   return (
     <motion.div
       animate={{
         backdropFilter: visible ? "blur(10px)" : "none",
         boxShadow: visible
-          ? "0 0 24px rgba(34, 42, 53, 0.06), 0 1px 1px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(34, 42, 53, 0.04), 0 0 4px rgba(34, 42, 53, 0.08), 0 16px 68px rgba(47, 48, 55, 0.05), 0 1px 0 rgba(255, 255, 255, 0.1) inset"
+          ? "0 0 24px rgba(34,42,53,0.06), 0 1px 1px rgba(0,0,0,0.05), 0 0 0 1px rgba(34,42,53,0.04), 0 0 4px rgba(34,42,53,0.08), 0 16px 68px rgba(47,48,55,0.05), 0 1px 0 rgba(255,255,255,0.1) inset"
           : "none",
         width: visible ? "85%" : "100%",
         y: visible ? 10 : 0,
       }}
-      transition={{
-        type: "spring",
-        stiffness: 200,
-        damping: 50,
-      }}
-      style={{
-        minWidth: "800px",
-      }}
+      transition={WIDTH_TRANSITION}
+      style={{ minWidth: "800px", willChange: "width" }}
       className={cn(
         "relative z-[60] mx-auto hidden w-full max-w-7xl flex-row items-center justify-between self-start rounded-xl bg-transparent px-4 py-2 lg:flex dark:bg-transparent",
         visible && "border bg-white dark:bg-neutral-950",
@@ -117,27 +114,27 @@ export const NavBody = ({ children, className, visible }: NavBodyProps) => {
 export const NavItems = ({ items, className, onItemClick }: NavItemsProps) => {
   const [hovered, setHovered] = useState<number | null>(null);
   const pathname = usePathname();
+
   return (
-    <motion.div
+    <div
       onMouseLeave={() => setHovered(null)}
       className={cn(
-        "absolute inset-0 hidden flex-1 flex-row items-center justify-center space-x-2 text-base font-medium transition duration-200 lg:flex lg:space-x-2",
+        "absolute inset-0 hidden flex-1 flex-row items-center justify-center space-x-2 text-base font-medium lg:flex lg:space-x-2",
         className,
       )}
     >
       {items.map((item, idx) => {
         const isActive = pathname === item.link;
-
         return (
-          <a
+          <Link
+            key={item.link}
+            href={item.link}
             onMouseEnter={() => setHovered(idx)}
             onClick={onItemClick}
             className={cn(
               "relative px-4 py-2 transition-colors",
               isActive ? "text-foreground" : "text-muted-foreground",
             )}
-            key={`link-${idx}`}
-            href={item.link}
           >
             {hovered === idx && (
               <motion.div
@@ -146,20 +143,22 @@ export const NavItems = ({ items, className, onItemClick }: NavItemsProps) => {
               />
             )}
             <span className="relative z-20">{item.name}</span>
-          </a>
+          </Link>
         );
       })}
-    </motion.div>
+    </div>
   );
 };
 
-export const MobileNav = ({ children, className, visible }: MobileNavProps) => {
+export const MobileNav = ({ children, className }: MobileNavProps) => {
+  const { visible } = useNavbar();
+
   return (
     <motion.div
       animate={{
         backdropFilter: visible ? "blur(10px)" : "none",
         boxShadow: visible
-          ? "0 0 24px rgba(34, 42, 53, 0.06), 0 1px 1px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(34, 42, 53, 0.04), 0 0 4px rgba(34, 42, 53, 0.08), 0 16px 68px rgba(47, 48, 55, 0.05), 0 1px 0 rgba(255, 255, 255, 0.1) inset"
+          ? "0 0 24px rgba(34,42,53,0.06), 0 1px 1px rgba(0,0,0,0.05), 0 0 0 1px rgba(34,42,53,0.04), 0 0 4px rgba(34,42,53,0.08), 0 16px 68px rgba(47,48,55,0.05), 0 1px 0 rgba(255,255,255,0.1) inset"
           : "none",
         width: visible ? "90%" : "100%",
         paddingRight: visible ? "12px" : "0px",
@@ -167,11 +166,8 @@ export const MobileNav = ({ children, className, visible }: MobileNavProps) => {
         borderRadius: visible ? "4px" : "2rem",
         y: visible ? 20 : 0,
       }}
-      transition={{
-        type: "spring",
-        stiffness: 200,
-        damping: 50,
-      }}
+      transition={WIDTH_TRANSITION}
+      style={{ willChange: "width" }}
       className={cn(
         "relative z-50 mx-auto flex w-full max-w-[calc(100vw-2rem)] flex-col items-center justify-between bg-transparent px-0 py-2 lg:hidden",
         visible && "bg-white/80 dark:bg-neutral-950/80",

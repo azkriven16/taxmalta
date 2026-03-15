@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AnimatePresence, motion } from "framer-motion";
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -124,6 +124,84 @@ const DatePicker = ({
   );
 };
 
+const CORPORATE_PENALTY_SCHEDULE: PenaltyScheduleItem[] = [
+  { months: 6, penalty: 50, label: "Within 6 months" },
+  { months: 12, penalty: 200, label: "Later than 6 but within 12 months" },
+  { months: 18, penalty: 400, label: "Later than 12 but within 18 months" },
+  { months: 24, penalty: 600, label: "Later than 18 but within 24 months" },
+  { months: 36, penalty: 800, label: "Later than 24 but within 36 months" },
+  { months: 48, penalty: 1000, label: "Later than 36 but within 48 months" },
+  { months: 60, penalty: 1200, label: "Later than 48 but within 60 months" },
+  {
+    months: Number.POSITIVE_INFINITY,
+    penalty: 1500,
+    label: "Later than 60 months",
+  },
+];
+
+const INDIVIDUAL_PENALTY_SCHEDULE: PenaltyScheduleItem[] = [
+  { months: 6, penalty: 10, label: "Within 6 months" },
+  { months: 12, penalty: 50, label: "Later than 6 but within 12 months" },
+  { months: 18, penalty: 100, label: "Later than 12 but within 18 months" },
+  { months: 24, penalty: 150, label: "Later than 18 but within 24 months" },
+  { months: 36, penalty: 200, label: "Later than 24 but within 36 months" },
+  { months: 48, penalty: 300, label: "Later than 36 but within 48 months" },
+  { months: 60, penalty: 400, label: "Later than 48 but within 60 months" },
+  {
+    months: Number.POSITIVE_INFINITY,
+    penalty: 500,
+    label: "Later than 60 months",
+  },
+];
+
+const INTEREST_PERIODS: InterestPeriod[] = [
+  {
+    startDate: new Date(1900, 0, 1),
+    endDate: new Date(2008, 11, 31),
+    rate: 0.01,
+    label: "Up to Dec 2008 (1% monthly)",
+  },
+  {
+    startDate: new Date(2009, 0, 1),
+    endDate: new Date(2013, 11, 31),
+    rate: 0.0075,
+    label: "Jan 2009 - Dec 2013 (0.75% monthly)",
+  },
+  {
+    startDate: new Date(2014, 0, 1),
+    endDate: new Date(2019, 11, 31),
+    rate: 0.0054,
+    label: "Jan 2014 - Dec 2019 (0.54% monthly)",
+  },
+  {
+    startDate: new Date(2020, 0, 1),
+    endDate: new Date(2022, 4, 31),
+    rate: 0.0033,
+    label: "Jan 2020 - May 2022 (0.33% monthly)",
+  },
+  {
+    startDate: new Date(2022, 5, 1),
+    endDate: new Date(2099, 11, 31),
+    rate: 0.006,
+    label: "Jun 2022 onwards (0.6% monthly)",
+  },
+];
+
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
 export default function LateTaxPenaltyCalc() {
   const [form, setForm] = useState<FormState>({
     taxpayerType: "",
@@ -139,84 +217,6 @@ export default function LateTaxPenaltyCalc() {
   });
 
   const [errors, setErrors] = useState<ErrorState>({});
-
-  const corporatePenaltySchedule: PenaltyScheduleItem[] = [
-    { months: 6, penalty: 50, label: "Within 6 months" },
-    { months: 12, penalty: 200, label: "Later than 6 but within 12 months" },
-    { months: 18, penalty: 400, label: "Later than 12 but within 18 months" },
-    { months: 24, penalty: 600, label: "Later than 18 but within 24 months" },
-    { months: 36, penalty: 800, label: "Later than 24 but within 36 months" },
-    { months: 48, penalty: 1000, label: "Later than 36 but within 48 months" },
-    { months: 60, penalty: 1200, label: "Later than 48 but within 60 months" },
-    {
-      months: Number.POSITIVE_INFINITY,
-      penalty: 1500,
-      label: "Later than 60 months",
-    },
-  ];
-
-  const individualPenaltySchedule: PenaltyScheduleItem[] = [
-    { months: 6, penalty: 10, label: "Within 6 months" },
-    { months: 12, penalty: 50, label: "Later than 6 but within 12 months" },
-    { months: 18, penalty: 100, label: "Later than 12 but within 18 months" },
-    { months: 24, penalty: 150, label: "Later than 18 but within 24 months" },
-    { months: 36, penalty: 200, label: "Later than 24 but within 36 months" },
-    { months: 48, penalty: 300, label: "Later than 36 but within 48 months" },
-    { months: 60, penalty: 400, label: "Later than 48 but within 60 months" },
-    {
-      months: Number.POSITIVE_INFINITY,
-      penalty: 500,
-      label: "Later than 60 months",
-    },
-  ];
-
-  const interestPeriods: InterestPeriod[] = [
-    {
-      startDate: new Date(1900, 0, 1),
-      endDate: new Date(2008, 11, 31),
-      rate: 0.01,
-      label: "Up to Dec 2008 (1% monthly)",
-    },
-    {
-      startDate: new Date(2009, 0, 1),
-      endDate: new Date(2013, 11, 31),
-      rate: 0.0075,
-      label: "Jan 2009 - Dec 2013 (0.75% monthly)",
-    },
-    {
-      startDate: new Date(2014, 0, 1),
-      endDate: new Date(2019, 11, 31),
-      rate: 0.0054,
-      label: "Jan 2014 - Dec 2019 (0.54% monthly)",
-    },
-    {
-      startDate: new Date(2020, 0, 1),
-      endDate: new Date(2022, 4, 31),
-      rate: 0.0033,
-      label: "Jan 2020 - May 2022 (0.33% monthly)",
-    },
-    {
-      startDate: new Date(2022, 5, 1),
-      endDate: new Date(2099, 11, 31),
-      rate: 0.006,
-      label: "Jun 2022 onwards (0.6% monthly)",
-    },
-  ];
-
-  const MONTHS = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
 
   const formatNumberWithCommas = (value: number) => {
     return value.toLocaleString("en-GB", {
@@ -356,7 +356,7 @@ export default function LateTaxPenaltyCalc() {
 
   const step = computeStep(form);
 
-  const handleChange = (field: keyof FormState, value: string): void => {
+  const handleChange = useCallback((field: keyof FormState, value: string): void => {
     const newForm = { ...form, [field]: value };
 
     if (field === "taxpayerType") {
@@ -404,7 +404,8 @@ export default function LateTaxPenaltyCalc() {
 
     setForm(newForm);
     validateField(field, value);
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form]);
 
   const getCorporateDeadline = (
     taxYearNum: number,
@@ -483,8 +484,8 @@ export default function LateTaxPenaltyCalc() {
 
     const schedule =
       form.taxpayerType === "Corporate"
-        ? corporatePenaltySchedule
-        : individualPenaltySchedule;
+        ? CORPORATE_PENALTY_SCHEDULE
+        : INDIVIDUAL_PENALTY_SCHEDULE;
 
     if (form.selfAssessment === "No") {
       const filingDeadline = calculateFilingDeadline();
@@ -552,7 +553,7 @@ export default function LateTaxPenaltyCalc() {
     }> = [];
     let currentDate = new Date(dueDate);
 
-    for (const period of interestPeriods) {
+    for (const period of INTEREST_PERIODS) {
       if (currentDate >= computeDate) break;
 
       const periodStart = new Date(
@@ -585,7 +586,7 @@ export default function LateTaxPenaltyCalc() {
     return { total: totalInterest, breakdown };
   };
 
-  const calc = () => {
+  const { outstanding, penalty, interest, total, interestBreakdown } = useMemo(() => {
     const outstanding = form.taxAmount
       ? Number.parseFloat(form.taxAmount) || 0
       : 0;
@@ -600,9 +601,8 @@ export default function LateTaxPenaltyCalc() {
       total,
       interestBreakdown: interestResult.breakdown,
     };
-  };
-
-  const { outstanding, penalty, interest, total, interestBreakdown } = calc();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form]);
 
   return (
     <div>

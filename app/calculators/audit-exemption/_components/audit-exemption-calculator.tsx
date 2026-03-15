@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { AnimatePresence, motion } from "framer-motion";
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Accordion,
   AccordionContent,
@@ -284,56 +284,58 @@ export default function AuditExemptionCalculator() {
     };
   };
 
-  const handleChange = (field: keyof FormState, value: string): void => {
-    const newForm = { ...form, [field]: value };
-    if (field === "incorporationYear") {
-      newForm.firstQuestion = "";
-      newForm.isMerchantShipping = "";
-      newForm.secondQuestion = "";
-      newForm.isArticle174Exempt = "";
-      newForm.qualifyPath = "";
-      newForm.rule3FinancialYearEnd = "";
-      newForm.rule3Qualifications = "";
-      newForm.rule3WithinThreeYears = "";
-      newForm.rule3Turnover = "";
-      newForm.rule6BalanceSheet = "";
-      newForm.rule6Turnover = "";
-      newForm.rule6Employees = "";
-      newForm.smallGroupBalanceSheet = "";
-      newForm.smallGroupTurnover = "";
-      newForm.smallGroupEmployees = "";
-      newForm.rule6SecondBalanceSheet = "";
-      newForm.rule6SecondTurnover = "";
-      newForm.rule6SecondEmployees = "";
-    }
+  const handleChange = useCallback((field: keyof FormState, value: string): void => {
+    setForm((prev) => {
+      const newForm = { ...prev, [field]: value };
+      if (field === "incorporationYear") {
+        newForm.firstQuestion = "";
+        newForm.isMerchantShipping = "";
+        newForm.secondQuestion = "";
+        newForm.isArticle174Exempt = "";
+        newForm.qualifyPath = "";
+        newForm.rule3FinancialYearEnd = "";
+        newForm.rule3Qualifications = "";
+        newForm.rule3WithinThreeYears = "";
+        newForm.rule3Turnover = "";
+        newForm.rule6BalanceSheet = "";
+        newForm.rule6Turnover = "";
+        newForm.rule6Employees = "";
+        newForm.smallGroupBalanceSheet = "";
+        newForm.smallGroupTurnover = "";
+        newForm.smallGroupEmployees = "";
+        newForm.rule6SecondBalanceSheet = "";
+        newForm.rule6SecondTurnover = "";
+        newForm.rule6SecondEmployees = "";
+      }
 
-    if (
-      [
-        "firstQuestion",
-        "isMerchantShipping",
-        "secondQuestion",
-        "isArticle174Exempt",
-      ].includes(field)
-    ) {
-      newForm.rule3FinancialYearEnd = "";
-      newForm.rule3Qualifications = "";
-      newForm.rule3WithinThreeYears = "";
-      newForm.rule3Turnover = "";
-      newForm.rule6BalanceSheet = "";
-      newForm.rule6Turnover = "";
-      newForm.rule6Employees = "";
-      newForm.smallGroupBalanceSheet = "";
-      newForm.smallGroupTurnover = "";
-      newForm.smallGroupEmployees = "";
-      newForm.rule6SecondBalanceSheet = "";
-      newForm.rule6SecondTurnover = "";
-      newForm.rule6SecondEmployees = "";
-    }
+      if (
+        [
+          "firstQuestion",
+          "isMerchantShipping",
+          "secondQuestion",
+          "isArticle174Exempt",
+        ].includes(field)
+      ) {
+        newForm.rule3FinancialYearEnd = "";
+        newForm.rule3Qualifications = "";
+        newForm.rule3WithinThreeYears = "";
+        newForm.rule3Turnover = "";
+        newForm.rule6BalanceSheet = "";
+        newForm.rule6Turnover = "";
+        newForm.rule6Employees = "";
+        newForm.smallGroupBalanceSheet = "";
+        newForm.smallGroupTurnover = "";
+        newForm.smallGroupEmployees = "";
+        newForm.rule6SecondBalanceSheet = "";
+        newForm.rule6SecondTurnover = "";
+        newForm.rule6SecondEmployees = "";
+      }
 
-    setForm(newForm);
-  };
+      return newForm;
+    });
+  }, []);
 
-  const conclusion = getConclusion();
+  const conclusion = useMemo(() => getConclusion(), [form]); // eslint-disable-line react-hooks/exhaustive-deps, react-hooks/preserve-manual-memoization
 
   const smallGroupCount = countCriteria([
     form.smallGroupBalanceSheet,

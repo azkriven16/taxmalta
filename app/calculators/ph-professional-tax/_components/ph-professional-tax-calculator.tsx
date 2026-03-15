@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -19,7 +19,9 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { InfoIcon } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { InfoIcon, RotateCcw } from "lucide-react";
 
 // Progressive income tax rates — Philippines 2026 onwards
 function progressiveTax(income: number): number {
@@ -42,6 +44,15 @@ function formatPHP(value: number): string {
   });
 }
 
+const INCOME_TAX_TABLE_ROWS = [
+  { range: "Up to ₱250,000", base: "—", rate: "0%", excess: "—" },
+  { range: "₱250,001 – ₱400,000", base: "—", rate: "15%", excess: "₱250,000" },
+  { range: "₱400,001 – ₱800,000", base: "₱22,500", rate: "20%", excess: "₱400,000" },
+  { range: "₱800,001 – ₱2,000,000", base: "₱102,500", rate: "25%", excess: "₱800,000" },
+  { range: "₱2,000,001 – ₱8,000,000", base: "₱402,500", rate: "30%", excess: "₱2,000,000" },
+  { range: "Over ₱8,000,000", base: "₱2,202,500", rate: "35%", excess: "₱8,000,000" },
+] as const;
+
 interface FormState {
   grossRevenue: string;
   expenses: string;
@@ -50,75 +61,92 @@ interface FormState {
   assetsExceed100M: string;
 }
 
+const DEFAULT_FORM: FormState = {
+  grossRevenue: "",
+  expenses: "",
+  showOPC: "no",
+  directCost: "",
+  assetsExceed100M: "no",
+};
+
 export default function PhProfessionalTaxCalculator() {
-  const [form, setForm] = useState<FormState>({
-    grossRevenue: "",
-    expenses: "",
-    showOPC: "no",
-    directCost: "",
-    assetsExceed100M: "no",
-  });
+  const [form, setForm] = useState<FormState>(DEFAULT_FORM);
 
-  const handleChange = (field: keyof FormState, value: string) => {
-    setForm({ ...form, [field]: value });
-  };
+  const resetForm = useCallback(() => setForm(DEFAULT_FORM), []);
 
-  const grossRevenue = parseFloat(form.grossRevenue) || 0;
-  const expenses = parseFloat(form.expenses) || 0;
-  const netIncome = grossRevenue - expenses;
-  const directCost = parseFloat(form.directCost) || 0;
-  const assetsExceed100M = form.assetsExceed100M === "yes";
-  const showOPC = form.showOPC === "yes";
+  const handleChange = useCallback((field: keyof FormState, value: string) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  }, []);
 
-  // --- Individual Taxpayer ---
+  const {
+    grossRevenue,
+    netIncome,
+    showOPC,
+    ind_ID_taxable, ind_ID_incomeTax, ind_ID_opt, ind_ID_total,
+    ind_OSD_taxable, ind_OSD_incomeTax, ind_OSD_opt, ind_OSD_total,
+    is8Available, ind_8_taxable, ind_8_incomeTax, ind_8_total,
+    bestOption,
+    opc_ID_taxable, isOPCSmall_ID, opc_ID_incomeTax, opc_ID_opt, opc_ID_total,
+    opc_OSD_taxable, isOPCSmall_OSD, opc_OSD_incomeTax, opc_OSD_opt, opc_OSD_total,
+  } = useMemo(() => {
+    const grossRevenue = parseFloat(form.grossRevenue) || 0;
+    const expenses = parseFloat(form.expenses) || 0;
+    const netIncome = grossRevenue - expenses;
+    const directCost = parseFloat(form.directCost) || 0;
+    const assetsExceed100M = form.assetsExceed100M === "yes";
+    const showOPC = form.showOPC === "yes";
 
-  // Itemised Deduction
-  const ind_ID_taxable = Math.max(0, netIncome);
-  const ind_ID_incomeTax = progressiveTax(ind_ID_taxable);
-  const ind_ID_opt = computeOPT(grossRevenue);
-  const ind_ID_total = ind_ID_incomeTax + ind_ID_opt;
+    // --- Individual Taxpayer ---
+    const ind_ID_taxable = Math.max(0, netIncome);
+    const ind_ID_incomeTax = progressiveTax(ind_ID_taxable);
+    const ind_ID_opt = computeOPT(grossRevenue);
+    const ind_ID_total = ind_ID_incomeTax + ind_ID_opt;
 
-  // 40% Optional Standard Deduction
-  const ind_OSD_taxable = Math.max(0, grossRevenue * 0.6);
-  const ind_OSD_incomeTax = progressiveTax(ind_OSD_taxable);
-  const ind_OSD_opt = computeOPT(grossRevenue);
-  const ind_OSD_total = ind_OSD_incomeTax + ind_OSD_opt;
+    const ind_OSD_taxable = Math.max(0, grossRevenue * 0.6);
+    const ind_OSD_incomeTax = progressiveTax(ind_OSD_taxable);
+    const ind_OSD_opt = computeOPT(grossRevenue);
+    const ind_OSD_total = ind_OSD_incomeTax + ind_OSD_opt;
 
-  // 8% Flat Rate (in lieu of income tax + OPT)
-  const is8Available = grossRevenue > 0 && grossRevenue <= 3_000_000;
-  const ind_8_taxable = grossRevenue;
-  const ind_8_incomeTax = is8Available
-    ? Math.max(0, (grossRevenue - 250_000) * 0.08)
-    : 0;
-  const ind_8_total = ind_8_incomeTax;
+    const is8Available = grossRevenue > 0 && grossRevenue <= 3_000_000;
+    const ind_8_taxable = grossRevenue;
+    const ind_8_incomeTax = is8Available
+      ? Math.max(0, (grossRevenue - 250_000) * 0.08)
+      : 0;
+    const ind_8_total = ind_8_incomeTax;
 
-  // Best individual option
-  const getBestOption = () => {
-    if (!grossRevenue) return null;
-    const options = [
-      { name: "Itemised Deduction", total: ind_ID_total },
-      { name: "40% OSD", total: ind_OSD_total },
-      ...(is8Available ? [{ name: "8% Flat Rate", total: ind_8_total }] : []),
-    ];
-    return options.reduce((a, b) => (a.total <= b.total ? a : b));
-  };
-  const bestOption = getBestOption();
+    let bestOption: { name: string; total: number } | null = null;
+    if (grossRevenue) {
+      const options = [
+        { name: "Itemised Deduction", total: ind_ID_total },
+        { name: "40% OSD", total: ind_OSD_total },
+        ...(is8Available ? [{ name: "8% Flat Rate", total: ind_8_total }] : []),
+      ];
+      bestOption = options.reduce((a, b) => (a.total <= b.total ? a : b));
+    }
 
-  // --- One Person Corporation ---
+    // --- One Person Corporation ---
+    const opc_ID_taxable = Math.max(0, netIncome);
+    const isOPCSmall_ID = !assetsExceed100M && opc_ID_taxable <= 5_000_000;
+    const opc_ID_incomeTax = opc_ID_taxable * (isOPCSmall_ID ? 0.2 : 0.25);
+    const opc_ID_opt = computeOPT(grossRevenue);
+    const opc_ID_total = opc_ID_incomeTax + opc_ID_opt;
 
-  // OPC Itemised
-  const opc_ID_taxable = Math.max(0, netIncome);
-  const isOPCSmall_ID = !assetsExceed100M && opc_ID_taxable <= 5_000_000;
-  const opc_ID_incomeTax = opc_ID_taxable * (isOPCSmall_ID ? 0.2 : 0.25);
-  const opc_ID_opt = computeOPT(grossRevenue);
-  const opc_ID_total = opc_ID_incomeTax + opc_ID_opt;
+    const opc_OSD_taxable = Math.max(0, (grossRevenue - directCost) * 0.6);
+    const isOPCSmall_OSD = !assetsExceed100M && opc_OSD_taxable <= 5_000_000;
+    const opc_OSD_incomeTax = opc_OSD_taxable * (isOPCSmall_OSD ? 0.2 : 0.25);
+    const opc_OSD_opt = computeOPT(grossRevenue);
+    const opc_OSD_total = opc_OSD_incomeTax + opc_OSD_opt;
 
-  // OPC 40% OSD — direct costs excluded first, then 40% deduction applied
-  const opc_OSD_taxable = Math.max(0, (grossRevenue - directCost) * 0.6);
-  const isOPCSmall_OSD = !assetsExceed100M && opc_OSD_taxable <= 5_000_000;
-  const opc_OSD_incomeTax = opc_OSD_taxable * (isOPCSmall_OSD ? 0.2 : 0.25);
-  const opc_OSD_opt = computeOPT(grossRevenue);
-  const opc_OSD_total = opc_OSD_incomeTax + opc_OSD_opt;
+    return {
+      grossRevenue, netIncome, showOPC,
+      ind_ID_taxable, ind_ID_incomeTax, ind_ID_opt, ind_ID_total,
+      ind_OSD_taxable, ind_OSD_incomeTax, ind_OSD_opt, ind_OSD_total,
+      is8Available, ind_8_taxable, ind_8_incomeTax, ind_8_total,
+      bestOption,
+      opc_ID_taxable, isOPCSmall_ID, opc_ID_incomeTax, opc_ID_opt, opc_ID_total,
+      opc_OSD_taxable, isOPCSmall_OSD, opc_OSD_incomeTax, opc_OSD_opt, opc_OSD_total,
+    };
+  }, [form]);
 
   return (
     <div className="bg-background min-h-screen">
@@ -139,10 +167,23 @@ export default function PhProfessionalTaxCalculator() {
         <div className="grid gap-6 lg:grid-cols-5">
           {/* Left — Tax Profile */}
           <Card className="shadow-sm lg:col-span-2">
-            <CardHeader className="bg-muted/50 border-b">
-              <CardTitle className="text-lg font-semibold">
-                Your Tax Profile
-              </CardTitle>
+            <CardHeader className="border-b">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-semibold">
+                  Your Tax Profile
+                </CardTitle>
+                {form.grossRevenue && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={resetForm}
+                    className="h-7 gap-1 px-2 text-xs text-muted-foreground"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    Reset
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="space-y-5 pt-6">
               <div className="space-y-2">
@@ -250,7 +291,7 @@ export default function PhProfessionalTaxCalculator() {
           <div className="space-y-5 lg:col-span-3">
             {/* Individual Taxpayer */}
             <Card className="shadow-sm">
-              <CardHeader className="bg-muted/50 border-b">
+              <CardHeader className="border-b">
                 <CardTitle className="text-lg font-semibold">
                   Tax Obligations — Individual Taxpayer
                 </CardTitle>
@@ -260,6 +301,7 @@ export default function PhProfessionalTaxCalculator() {
                   {/* Itemised */}
                   <ResultColumn
                     label="Itemised Deduction"
+                    best={bestOption?.name === "Itemised Deduction"}
                     rows={[
                       {
                         name: "Taxable Income",
@@ -277,11 +319,13 @@ export default function PhProfessionalTaxCalculator() {
                       },
                     ]}
                     total={`₱${formatPHP(ind_ID_total)}`}
+                    effectiveRate={grossRevenue > 0 ? `${((ind_ID_total / grossRevenue) * 100).toFixed(1)}%` : undefined}
                   />
 
                   {/* 40% OSD */}
                   <ResultColumn
                     label="40% OSD"
+                    best={bestOption?.name === "40% OSD"}
                     rows={[
                       {
                         name: "Taxable Income",
@@ -299,11 +343,13 @@ export default function PhProfessionalTaxCalculator() {
                       },
                     ]}
                     total={`₱${formatPHP(ind_OSD_total)}`}
+                    effectiveRate={grossRevenue > 0 ? `${((ind_OSD_total / grossRevenue) * 100).toFixed(1)}%` : undefined}
                   />
 
                   {/* 8% Rate */}
                   <ResultColumn
                     label="8% Flat Rate"
+                    best={bestOption?.name === "8% Flat Rate"}
                     unavailable={
                       grossRevenue > 3_000_000
                         ? "Not available — revenue exceeds ₱3M"
@@ -327,6 +373,7 @@ export default function PhProfessionalTaxCalculator() {
                       },
                     ]}
                     total={`₱${formatPHP(ind_8_total)}`}
+                    effectiveRate={is8Available && grossRevenue > 0 ? `${((ind_8_total / grossRevenue) * 100).toFixed(1)}%` : undefined}
                     note="8% is in lieu of income tax and percentage tax"
                   />
                 </div>
@@ -348,7 +395,7 @@ export default function PhProfessionalTaxCalculator() {
             {/* OPC Section */}
             {showOPC && (
               <Card className="shadow-sm">
-                <CardHeader className="bg-muted/50 border-b">
+                <CardHeader className="border-b">
                   <CardTitle className="text-lg font-semibold">
                     Tax Obligations — One Person Corporation (OPC)
                   </CardTitle>
@@ -435,45 +482,8 @@ export default function PhProfessionalTaxCalculator() {
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {[
-                      {
-                        range: "Up to ₱250,000",
-                        base: "—",
-                        rate: "0%",
-                        excess: "—",
-                      },
-                      {
-                        range: "₱250,001 – ₱400,000",
-                        base: "—",
-                        rate: "15%",
-                        excess: "₱250,000",
-                      },
-                      {
-                        range: "₱400,001 – ₱800,000",
-                        base: "₱22,500",
-                        rate: "20%",
-                        excess: "₱400,000",
-                      },
-                      {
-                        range: "₱800,001 – ₱2,000,000",
-                        base: "₱102,500",
-                        rate: "25%",
-                        excess: "₱800,000",
-                      },
-                      {
-                        range: "₱2,000,001 – ₱8,000,000",
-                        base: "₱402,500",
-                        rate: "30%",
-                        excess: "₱2,000,000",
-                      },
-                      {
-                        range: "Over ₱8,000,000",
-                        base: "₱2,202,500",
-                        rate: "35%",
-                        excess: "₱8,000,000",
-                      },
-                    ].map((row, i) => (
-                      <tr key={i} className="text-muted-foreground">
+                    {INCOME_TAX_TABLE_ROWS.map((row) => (
+                      <tr key={row.range} className="text-muted-foreground">
                         <td className="py-2">{row.range}</td>
                         <td className="py-2 text-right">{row.base}</td>
                         <td className="py-2 text-right font-medium text-foreground">
@@ -607,18 +617,29 @@ function ResultColumn({
   total,
   note,
   unavailable,
+  best,
+  effectiveRate,
 }: {
   label: string;
   rows: ResultRow[];
   total: string;
   note?: string;
   unavailable?: string;
+  best?: boolean;
+  effectiveRate?: string;
 }) {
   return (
     <div className="space-y-3">
-      <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wide">
-        {label}
-      </p>
+      <div className="flex items-center gap-1.5">
+        <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wide">
+          {label}
+        </p>
+        {best && (
+          <Badge className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 h-4 px-1 text-[10px]">
+            ✓ Best
+          </Badge>
+        )}
+      </div>
       {unavailable ? (
         <p className="text-muted-foreground py-2 text-sm italic">
           {unavailable}
@@ -638,6 +659,11 @@ function ResultColumn({
           <div className="border-t pt-2">
             <p className="text-muted-foreground text-[11px]">Total Tax</p>
             <p className="text-primary font-bold">{total}</p>
+            {effectiveRate && (
+              <p className="text-muted-foreground text-[10px]">
+                Effective: {effectiveRate} of revenue
+              </p>
+            )}
           </div>
           {note && (
             <p className="text-muted-foreground text-[10px] italic">{note}</p>

@@ -14,6 +14,7 @@ import { useState } from "react";
 import { ModeToggle } from "./theme-toggle";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { useCountry, type Country } from "@/context/country-context";
 import {
   DropdownMenu,
@@ -23,6 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Flag from "react-world-flags";
 
 const navItems = [
   { name: "Home", link: "/" },
@@ -30,14 +32,26 @@ const navItems = [
   { name: "Contact", link: "/contact" },
 ];
 
-const countries: { code: Country; flag: string; label: string }[] = [
-  { code: "MT", flag: "🇲🇹", label: "Malta" },
-  { code: "PH", flag: "🇵🇭", label: "Philippines" },
+const countries: { code: Country; label: string }[] = [
+  { code: "MT", label: "Malta" },
+  { code: "PH", label: "Philippines" },
 ];
 
 function CountryDropdown({ className }: { className?: string }) {
   const { country, setCountry } = useCountry();
+  const router = useRouter();
+  const pathname = usePathname();
   const current = countries.find((c) => c.code === country)!;
+
+  function handleSelect(code: Country) {
+    if (code === country) return;
+    setCountry(code);
+    // If on a specific calculator page, go back to /calculators so the user
+    // sees the calculator list for the newly selected country.
+    if (pathname.startsWith("/calculators/")) {
+      router.push("/calculators");
+    }
+  }
 
   return (
     <DropdownMenu>
@@ -47,18 +61,18 @@ function CountryDropdown({ className }: { className?: string }) {
           className,
         )}
       >
-        <span>{current.flag}</span>
+        <Flag code={current.code} className="h-4 w-6 rounded-sm object-cover" />
         <span>{current.label}</span>
         <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="z-[200] min-w-36">
-        {countries.map(({ code, flag, label }) => (
+        {countries.map(({ code, label }) => (
           <DropdownMenuItem
             key={code}
-            onClick={() => setCountry(code)}
+            onClick={() => handleSelect(code)}
             className="flex items-center gap-2"
           >
-            <span className="text-base">{flag}</span>
+            <Flag code={code} className="h-4 w-6 rounded-sm object-cover" />
             <span>{label}</span>
             {country === code && (
               <Check className="ml-auto h-3.5 w-3.5 text-primary" />

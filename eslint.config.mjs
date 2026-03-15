@@ -1,25 +1,14 @@
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
+import { createRequire } from "module";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const require = createRequire(import.meta.url);
 
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
+// eslint-config-next ships a native flat config array — import it directly
+// to avoid @eslint/eslintrc's FlatCompat circular-reference bug.
+const nextCoreWebVitals = require("eslint-config-next/core-web-vitals");
 
+/** @type {import("eslint").Linter.Config[]} */
 const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
-  {
-    ignores: [
-      "node_modules/**",
-      ".next/**",
-      "out/**",
-      "build/**",
-      "next-env.d.ts",
-    ],
-  },
+  ...nextCoreWebVitals,
   {
     rules: {
       "@typescript-eslint/no-explicit-any": "off",

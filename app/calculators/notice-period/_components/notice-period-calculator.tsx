@@ -1,5 +1,5 @@
 'use client'
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Accordion,
   AccordionContent,
@@ -209,6 +209,9 @@ export default function NoticePeriodCalculator() {
   const [startDate, setStartDate] = useState<string>("");
   const [noticeDate, setNoticeDate] = useState<string>("");
 
+  const handleStartDateChange = useCallback((value: string) => setStartDate(value), []);
+  const handleNoticeDateChange = useCallback((value: string) => setNoticeDate(value), []);
+
   const results = useMemo<Results | null>(() => {
     const s = parseDate(startDate);
     const n = parseDate(noticeDate);
@@ -292,7 +295,7 @@ export default function NoticePeriodCalculator() {
                   </Label>
                   <DatePicker
                     value={startDate}
-                    onChange={(value) => setStartDate(value)}
+                    onChange={handleStartDateChange}
                     placeholder="Select start date"
                     hasError={!!hasError}
                   />
@@ -304,7 +307,7 @@ export default function NoticePeriodCalculator() {
                   </Label>
                   <DatePicker
                     value={noticeDate}
-                    onChange={(value) => setNoticeDate(value)}
+                    onChange={handleNoticeDateChange}
                     placeholder="Select notice date"
                     hasError={!!hasError}
                   />

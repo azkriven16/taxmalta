@@ -2,8 +2,7 @@
 
 See [`docs/`](docs/) for full project documentation.
 
-- [Project Overview](docs/overview.md)
-- [Development Flow](docs/dev-flow.md)
-- [Conventions](docs/conventions.md)
-- [Calculators Guide](docs/calculators.md)
-- [Skills](docs/skills.md)
+- [Project Overview & Skills](docs/overview.md)
+- [Development Guide](docs/dev-guide.md)
+- [Calculators Reference](docs/calculators.md)
+- [Website Development Agreement](docs/agreement.md)

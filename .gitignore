@@ -43,3 +43,6 @@ next-env.d.ts
 # local agent/AI config
 .claude/
 .agents/
+
+# project documentation (private — not for source control)
+/docs/
