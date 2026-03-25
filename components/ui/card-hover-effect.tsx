@@ -4,12 +4,14 @@ import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "motion/react";
 import Image from "next/image";
 import { useState } from "react";
+import { toast } from "sonner";
 
 interface HoverEffectItem {
   title: string;
   description: string;
   link: string;
   image: string;
+  comingSoon?: boolean;
 }
 
 export const HoverEffect = ({
@@ -29,73 +31,81 @@ export const HoverEffect = ({
         className,
       )}
     >
-      {items.map((item, idx) => (
-        <motion.div
-          key={item.link}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: idx * 0.1 }}
-        >
-          <a
-            href={item.link}
-            className="group relative block h-full w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-            onMouseEnter={() => setHoveredIndex(idx)}
-            onMouseLeave={() => setHoveredIndex(null)}
-            onFocus={() => setFocusedIndex(idx)}
-            onBlur={() => setFocusedIndex(null)}
-            aria-label={`Read more about ${item.title}`}
-          >
-            {/* Enhanced hover background */}
+      {items.map((item, idx) => {
+        const isActive = hoveredIndex === idx || focusedIndex === idx;
+        const sharedProps = {
+          className:
+            "group relative block h-full w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
+          onMouseEnter: () => setHoveredIndex(idx),
+          onMouseLeave: () => setHoveredIndex(null),
+          onFocus: () => setFocusedIndex(idx),
+          onBlur: () => setFocusedIndex(null),
+        };
+
+        const inner = (
+          <>
             <AnimatePresence>
-              {(hoveredIndex === idx || focusedIndex === idx) && (
+              {isActive && (
                 <motion.div
                   className="absolute -inset-2 bg-gradient-to-r from-blue-500/10 to-purple-500/10 dark:from-blue-400/20 dark:to-purple-400/20"
                   layoutId="hoverBackground"
                   initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{
-                    opacity: 1,
-                    scale: 1,
-                    transition: { duration: 0.2 },
-                  }}
-                  exit={{
-                    opacity: 0,
-                    scale: 0.95,
-                    transition: { duration: 0.2 },
-                  }}
+                  animate={{ opacity: 1, scale: 1, transition: { duration: 0.2 } }}
+                  exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
                 />
               )}
             </AnimatePresence>
-
-            {/* Enhanced card with better hover effects */}
             <motion.div
               className="relative z-10 h-full"
               whileHover={{ y: -2 }}
               transition={{ duration: 0.2 }}
             >
               <Card>
-                <CardImage
-                  src={item.image}
-                  alt={item.title}
-                  priority={idx < 3} // Load first 3 images with priority
-                />
+                <CardImage src={item.image} alt="" priority={idx < 3} />
                 <div className="flex flex-col gap-3 pt-4">
                   <CardTitle>{item.title}</CardTitle>
                   <CardDescription>{item.description}</CardDescription>
-
-                  {/* Added CTA */}
                   <motion.div
                     initial={{ opacity: 0 }}
                     whileHover={{ opacity: 1 }}
-                    className="text-sm font-medium text-blue-600 dark:text-blue-400"
+                    className={`text-sm font-medium ${item.comingSoon ? "text-neutral-400 dark:text-neutral-500" : "text-blue-600 dark:text-blue-400"}`}
                   >
-                    Read more →
+                    {item.comingSoon ? "Coming soon" : "Read more →"}
                   </motion.div>
                 </div>
               </Card>
             </motion.div>
-          </a>
-        </motion.div>
-      ))}
+          </>
+        );
+
+        return (
+          <motion.div
+            key={item.link}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: idx * 0.1 }}
+          >
+            {item.comingSoon ? (
+              <button
+                type="button"
+                aria-label={`${item.title} — coming soon`}
+                onClick={() =>
+                  toast("Coming soon!", {
+                    description: `${item.title} is currently under development.`,
+                  })
+                }
+                {...sharedProps}
+              >
+                {inner}
+              </button>
+            ) : (
+              <a href={item.link} aria-label={`Read more about ${item.title}`} {...sharedProps}>
+                {inner}
+              </a>
+            )}
+          </motion.div>
+        );
+      })}
     </div>
   );
 };

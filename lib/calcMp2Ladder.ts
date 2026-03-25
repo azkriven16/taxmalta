@@ -5,8 +5,8 @@
 import { calcMp2, MONTH_NAMES, type Mp2YearResult } from "./calcMp2";
 
 export interface Mp2LadderAccountInput {
-  startMonth: number;   // 1–12
-  monthlyAmount: number;
+  startMonth: number;          // 1–12
+  monthlyContributions: number[][];  // [yearIdx 0-5][monthIdx 0-11]
 }
 
 export interface Mp2LadderInput {
@@ -50,10 +50,10 @@ export function calcMp2Ladder(input: Mp2LadderInput): Mp2LadderResult {
   const accountResults: Mp2LadderAccountResult[] = [];
 
   for (let i = 0; i < accountCount; i++) {
-    const { startMonth, monthlyAmount } = accounts[i];
+    const { startMonth, monthlyContributions } = accounts[i];
     const startYear = baseYear + i;
 
-    const mp2 = calcMp2({ startMonth, startYear, monthlyAmount, mode: "compounded", futureRate });
+    const mp2 = calcMp2({ startMonth, startYear, monthlyContributions, mode: "compounded", futureRate });
 
     accountResults.push({
       accountIndex: i + 1,

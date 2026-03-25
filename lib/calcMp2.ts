@@ -1,33 +1,33 @@
 // MP2 (Modified Pag-IBIG 2) Investment Calculator — Philippines
-// Replicates the weighted-contribution dividend formula from the official spreadsheet
+// Supports per-month contribution amounts via a 6×12 grid (yearIdx × monthIdx)
 
 export type DividendMode = "compounded" | "annual";
 
 export interface Mp2Input {
-  startMonth: number;    // 1–12
-  startYear: number;     // e.g. 2022
-  monthlyAmount: number; // fixed monthly contribution in PHP
+  startMonth: number;           // 1–12
+  startYear: number;            // e.g. 2026
+  monthlyContributions: number[][];  // [yearIdx 0-5][monthIdx 0-11]
   mode: DividendMode;
-  futureRate?: number;   // override ASSUMED_FUTURE_RATE (e.g. 0.0712)
+  futureRate?: number;          // override assumed future rate (default 0.0712)
 }
 
 export interface Mp2YearResult {
-  period: string;            // "Start Year" | "Year 1" … "Maturity Year"
+  period: string;       // "Start Year" | "Year 1" … "Maturity Year"
   year: number;
-  months: number;            // how many contribution months in this year
-  totalDeposited: number;    // new deposits this year
-  dividends: number;         // dividends earned/paid this year
-  balance: number;           // running balance (compounded: all; annual: deposits only)
+  months: number;       // how many contribution months in this year
+  totalDeposited: number;
+  dividends: number;
+  balance: number;      // compounded: running total; annual: deposits only
   dividendRate: number;
-  isEstimated: boolean;      // true when rate is assumed (2026+)
+  isEstimated: boolean;
 }
 
 export interface Mp2Result {
   years: Mp2YearResult[];
   grandTotalDeposited: number;
   grandTotalDividends: number;
-  finalBalance: number;       // compounded: deposits+dividends; annual: deposits only
-  totalReceived: number;      // for annual payout: deposits + all dividends paid out
+  finalBalance: number;
+  totalReceived: number;  // compounded: finalBalance; annual: deposits + all dividends
   maturityMonth: string;
   maturityYear: number;
 }
@@ -44,7 +44,10 @@ const HISTORICAL_RATES: Record<number, number> = {
 
 const ASSUMED_FUTURE_RATE = 0.0712;
 
-function getDividendRate(year: number, futureRate: number): { rate: number; isEstimated: boolean } {
+function getDividendRate(
+  year: number,
+  futureRate: number,
+): { rate: number; isEstimated: boolean } {
   const rate = HISTORICAL_RATES[year];
   if (rate !== undefined) return { rate, isEstimated: false };
   return { rate: futureRate, isEstimated: true };
@@ -55,18 +58,16 @@ export const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December",
 ];
 
-// ─── Weighted contribution sum ────────────────────────────────────────────
-// Formula: Σ monthly × (13 − monthIndex) / 12
-// Jan (1) → weight 12/12, Feb (2) → 11/12, … Dec (12) → 1/12
-
-function weightedSum(monthly: number, months: number[]): number {
-  return months.reduce((sum, m) => sum + monthly * ((13 - m) / 12), 0);
-}
-
 // ─── Core calculation ─────────────────────────────────────────────────────
 
 export function calcMp2(input: Mp2Input): Mp2Result {
-  const { startMonth, startYear, monthlyAmount, mode, futureRate = ASSUMED_FUTURE_RATE } = input;
+  const {
+    startMonth,
+    startYear,
+    monthlyContributions,
+    mode,
+    futureRate = ASSUMED_FUTURE_RATE,
+  } = input;
 
   const maturityYear = startYear + 5;
   const maturityMonth = MONTH_NAMES[startMonth - 1];
@@ -76,20 +77,19 @@ export function calcMp2(input: Mp2Input): Mp2Result {
   ];
 
   const results: Mp2YearResult[] = [];
-  let prevCompoundedBalance = 0; // compounded: deposits + accumulated dividends
-  let prevPrincipal = 0;         // annual payout: deposits only
+  let prevCompoundedBalance = 0;
+  let prevPrincipal = 0;
 
   for (let y = 0; y < 6; y++) {
     const year = startYear + y;
     const { rate, isEstimated } = getDividendRate(year, futureRate);
+    const amounts = monthlyContributions[y] ?? new Array(12).fill(0);
 
-    // Months with contributions this year
+    // Active contribution months for this year slot
     let contribMonths: number[];
     if (y === 0) {
-      // Start Year: startMonth → December
       contribMonths = Array.from({ length: 13 - startMonth }, (_, i) => startMonth + i);
     } else if (y === 5) {
-      // Maturity Year: January → (startMonth − 1)
       contribMonths = startMonth > 1
         ? Array.from({ length: startMonth - 1 }, (_, i) => i + 1)
         : [];
@@ -97,29 +97,35 @@ export function calcMp2(input: Mp2Input): Mp2Result {
       contribMonths = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
     }
 
-    const totalDeposited = contribMonths.length * monthlyAmount;
-    const weighted = weightedSum(monthlyAmount, contribMonths);
+    // Sum deposits and weighted contribution for this year
+    const totalDeposited = contribMonths.reduce(
+      (sum, m) => sum + (amounts[m - 1] || 0),
+      0,
+    );
+    // Weighted: each month's amount × (13 − monthNumber) / 12
+    const weighted = contribMonths.reduce(
+      (sum, m) => sum + (amounts[m - 1] || 0) * ((13 - m) / 12),
+      0,
+    );
 
     // Dividend calculation
     let dividends: number;
-
     if (y === 5) {
-      // Maturity year: prorate by (startMonth − 1) / 12
+      // Maturity year: prorate previous balance by (startMonth − 1) / 12
       const proration = (startMonth - 1) / 12;
       const prevBase = mode === "compounded" ? prevCompoundedBalance : prevPrincipal;
-      dividends = (weighted * rate + prevBase * rate) * proration;
+      dividends = (weighted + prevBase) * rate * proration;
     } else if (y === 0) {
-      // Start Year: no previous balance
       dividends = weighted * rate;
     } else {
       const prevBase = mode === "compounded" ? prevCompoundedBalance : prevPrincipal;
       dividends = weighted * rate + prevBase * rate;
     }
 
-    // Balance
-    const balance = mode === "compounded"
-      ? prevCompoundedBalance + totalDeposited + dividends
-      : prevPrincipal + totalDeposited; // annual: dividends paid out, not accumulated
+    const balance =
+      mode === "compounded"
+        ? prevCompoundedBalance + totalDeposited + dividends
+        : prevPrincipal + totalDeposited;
 
     results.push({
       period: PERIOD_LABELS[y],
@@ -142,9 +148,10 @@ export function calcMp2(input: Mp2Input): Mp2Result {
   const grandTotalDeposited = results.reduce((s, r) => s + r.totalDeposited, 0);
   const grandTotalDividends = results.reduce((s, r) => s + r.dividends, 0);
   const finalBalance = results[results.length - 1].balance;
-  const totalReceived = mode === "compounded"
-    ? finalBalance
-    : grandTotalDeposited + grandTotalDividends;
+  const totalReceived =
+    mode === "compounded"
+      ? finalBalance
+      : grandTotalDeposited + grandTotalDividends;
 
   return {
     years: results,

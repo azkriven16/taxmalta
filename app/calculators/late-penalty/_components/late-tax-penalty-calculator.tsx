@@ -187,6 +187,51 @@ const INTEREST_PERIODS: InterestPeriod[] = [
   },
 ];
 
+// ─── Electronic submission deadline tables ────────────────────────────────
+// Helper: 1-indexed month for readability
+function d(y: number, m: number, day: number): Date {
+  return new Date(y, m - 1, day);
+}
+
+// Corporate e-filing extension deadlines
+// Columns: [Jan-Jun, Jul, Aug, Sep, Oct, Nov, Dec]
+const CORP_E_DEADLINES: Record<number, [Date, Date, Date, Date, Date, Date, Date]> = {
+  2016: [d(2017,7,2),  d(2017,7,2),  d(2017,7,31), d(2017,8,31), d(2017,10,1),  d(2017,10,31), d(2017,11,28)],
+  2017: [d(2018,7,2),  d(2018,7,2),  d(2018,7,31), d(2018,8,31), d(2018,10,1),  d(2018,10,31), d(2018,11,28)],
+  2018: [d(2019,7,30), d(2019,7,30), d(2019,7,30), d(2019,8,31), d(2019,9,30),  d(2019,11,2),  d(2019,11,27)],
+  2019: [d(2020,7,30), d(2020,7,30), d(2020,7,30), d(2020,8,31), d(2020,9,30),  d(2020,11,2),  d(2020,12,16)],
+  2020: [d(2021,7,30), d(2021,7,30), d(2021,7,30), d(2021,8,30), d(2021,9,30),  d(2021,11,1),  d(2021,12,1)],
+  2021: [d(2022,7,29), d(2022,7,29), d(2022,7,29), d(2022,8,30), d(2022,9,30),  d(2022,10,31), d(2022,11,30)],
+  2022: [d(2023,7,31), d(2023,7,31), d(2023,7,31), d(2023,8,31), d(2023,9,29),  d(2023,10,31), d(2023,11,30)],
+  2023: [d(2024,7,31), d(2024,7,31), d(2024,7,31), d(2024,8,30), d(2024,9,30),  d(2024,10,31), d(2024,11,29)],
+  2024: [d(2025,7,31), d(2025,7,31), d(2025,7,31), d(2025,8,29), d(2025,9,30),  d(2025,10,31), d(2025,11,28)],
+};
+
+// Individual e-filing extension deadlines (December year-end only)
+const IND_E_DEADLINES: Record<number, Date> = {
+  2019: d(2020, 8, 31),
+  2020: d(2021, 7, 31),
+  2021: d(2022, 7, 31),
+  2022: d(2023, 8,  4),
+  2023: d(2024, 7, 31),
+  2024: d(2025, 8,  8),
+};
+
+function getElectronicDeadline(
+  taxpayerType: string,
+  taxYearNum: number,
+  yearEndMonthIdx: number,
+): Date | null {
+  if (taxpayerType === "Individual") {
+    return IND_E_DEADLINES[taxYearNum] ?? null;
+  }
+  const row = CORP_E_DEADLINES[taxYearNum];
+  if (!row) return null;
+  // Map month index to column: months 0-5 (Jan-Jun) → col 0; Jul=6 → 1; Aug=7 → 2 … Dec=11 → 6
+  const col = yearEndMonthIdx <= 5 ? 0 : yearEndMonthIdx - 5;
+  return row[col] ?? null;
+}
+
 const MONTHS = [
   "January",
   "February",
@@ -235,12 +280,11 @@ export default function LateTaxPenaltyCalc() {
 
   const isValidTaxYear = (year: string, type: string): boolean => {
     const yearNum = Number.parseInt(year);
-    const currentYear = new Date().getFullYear();
 
     if (type === "Corporate") {
       return yearNum >= 2007 && yearNum <= 2026;
     } else {
-      return yearNum >= 1999 && yearNum <= currentYear;
+      return yearNum >= 2007 && yearNum <= 2026;
     }
   };
 
@@ -260,7 +304,7 @@ export default function LateTaxPenaltyCalc() {
               "Corporate tax year must be between 2007 and 2026";
           } else {
             newErrors[field] =
-              `Please enter a valid tax year (1999-${new Date().getFullYear()})`;
+              "Individual tax year must be between 2007 and 2026";
           }
         } else {
           delete newErrors[field];
@@ -504,12 +548,26 @@ export default function LateTaxPenaltyCalc() {
 
     if (!form.submittedDate) return 0;
 
-    const filingDeadline = calculateFilingDeadline();
+    const filingDeadline = calculateFilingDeadline(); // manual deadline
     if (!filingDeadline) return 0;
 
     const submissionDate = new Date(form.submittedDate);
-    const monthsLate = getMonthsDifference(filingDeadline, submissionDate);
 
+    // Check electronic submission extension: if submitted on or before the
+    // e-deadline, no late submission penalty applies.
+    const taxYearNum = Number.parseInt(form.taxYear);
+    const yearEndMonthIdx =
+      form.taxpayerType === "Individual" ? 11 : MONTHS.indexOf(form.yearEnd);
+    const eDeadline = getElectronicDeadline(
+      form.taxpayerType,
+      taxYearNum,
+      yearEndMonthIdx,
+    );
+    if (eDeadline && submissionDate <= eDeadline) return 0;
+
+    // Submitted after e-deadline (or no e-deadline exists): calculate months
+    // from the *manual* filing deadline — same as before.
+    const monthsLate = getMonthsDifference(filingDeadline, submissionDate);
     if (monthsLate <= 0) return 0;
 
     for (const tier of schedule) {
@@ -731,11 +789,19 @@ export default function LateTaxPenaltyCalc() {
                           </p>
                         </div>
                       ) : (
-                        <p className="text-muted-foreground text-xs">
-                          {form.taxpayerType === "Corporate"
-                            ? "Allowed tax years: 2007 - 2026"
-                            : `Allowed tax years: 1999 - ${new Date().getFullYear()}`}
-                        </p>
+                        <div className="space-y-1">
+                          <p className="text-muted-foreground text-xs">
+                            Allowed tax years: 2007 – 2026
+                          </p>
+                          {form.taxYear && !errors.taxYear && (
+                            <p className="text-muted-foreground text-xs">
+                              Applicable Year of Assessment:{" "}
+                              <span className="font-medium">
+                                {Number.parseInt(form.taxYear) + 1}
+                              </span>
+                            </p>
+                          )}
+                        </div>
                       )}
                     </motion.div>
                   )}
@@ -998,7 +1064,11 @@ export default function LateTaxPenaltyCalc() {
                         {form.taxpayerType === "Corporate" &&
                         form.taxYear === "2025"
                           ? "2025 Corporate Exemption Applied"
-                          : "Fixed penalty"}
+                          : penalty === 0 &&
+                              form.selfAssessment === "Yes" &&
+                              form.submittedDate
+                            ? "Submitted within e-extension — no penalty"
+                            : "Fixed penalty"}
                       </p>
                     </div>
                     <span className="text-lg font-semibold text-orange-900 dark:text-orange-100">
@@ -1065,20 +1135,45 @@ export default function LateTaxPenaltyCalc() {
                   (() => {
                     const deadline = calculateTaxPaymentDeadline();
                     const filingDeadline = calculateFilingDeadline();
+                    const taxYearNum = Number.parseInt(form.taxYear);
+                    const yearEndMonthIdx =
+                      form.taxpayerType === "Individual"
+                        ? 11
+                        : MONTHS.indexOf(form.yearEnd);
+                    const eDeadline = form.taxYear
+                      ? getElectronicDeadline(
+                          form.taxpayerType,
+                          taxYearNum,
+                          yearEndMonthIdx,
+                        )
+                      : null;
+                    const fmt = (d: Date) =>
+                      d.toLocaleDateString("en-GB", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      });
                     return (
                       <div className="mt-4 space-y-3">
                         {filingDeadline && (
                           <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950">
                             <p className="text-sm text-emerald-900 dark:text-emerald-100">
                               <span className="font-semibold">
-                                Filing Deadline:
+                                Manual Filing Deadline:
                               </span>{" "}
-                              {filingDeadline.toLocaleDateString("en-GB", {
-                                day: "numeric",
-                                month: "long",
-                                year: "numeric",
-                              })}
+                              {fmt(filingDeadline)}
                             </p>
+                            {eDeadline && (
+                              <p className="mt-1 text-sm text-emerald-900 dark:text-emerald-100">
+                                <span className="font-semibold">
+                                  Electronic Submission Extension:
+                                </span>{" "}
+                                {fmt(eDeadline)}
+                                <span className="ml-1 text-xs opacity-75">
+                                  — no penalty if submitted by this date
+                                </span>
+                              </p>
+                            )}
                           </div>
                         )}
                         {deadline && (
@@ -1087,11 +1182,7 @@ export default function LateTaxPenaltyCalc() {
                               <span className="font-semibold">
                                 Payment Deadline:
                               </span>{" "}
-                              {deadline.toLocaleDateString("en-GB", {
-                                day: "numeric",
-                                month: "long",
-                                year: "numeric",
-                              })}
+                              {fmt(deadline)}
                             </p>
                           </div>
                         )}
@@ -1308,7 +1399,7 @@ export default function LateTaxPenaltyCalc() {
                       wait
                     </li>
                     <li>
-                      <strong>Contact the Commissioner for Revenue</strong> to
+                      <strong>Contact the Malta Tax and Customs Administration</strong> to
                       arrange payment or discuss payment plans
                     </li>
                     <li>

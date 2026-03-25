@@ -83,8 +83,8 @@ export function HeroSection() {
               as="p"
               className="text-muted-foreground text-lg lg:text-xl"
             >
-              Instant, reliable estimates for your Malta tax, audit, and other
-              compliance obligations — all in a few clicks.
+              Instant, reliable tax, compliance, and investment estimates for
+              Malta &amp; the Philippines — all in a few clicks.
             </TextEffect>
 
             <p className="text-muted-foreground text-lg text-balance lg:text-xl">
@@ -129,26 +129,26 @@ export function HeroSection() {
 const features = [
   {
     icon: <FaBalanceScale className="text-2xl text-green-400" />,
-    title: "Malta-Specific Tax Rules",
+    title: "Multi-Jurisdiction Support",
     description:
-      "Accurately calculates taxes based on Malta's latest tax regulations.",
+      "Accurately computes tax, compliance, and financial estimates based on the latest regulations for supported countries — including Malta, the Philippines, and soon more.",
   },
   {
     icon: <FaCalculator className="text-2xl text-blue-400" />,
     title: "Instant Results",
     description:
-      "Get real-time tax estimates for individuals and businesses in seconds.",
+      "Get real-time calculations and checks for taxes, compliance obligations, payroll, and investments in just a few clicks.",
   },
   {
     icon: <FaCoins className="text-2xl text-yellow-400" />,
-    title: "Supports Multiple Tax Scenarios",
+    title: "Supports Multiple Scenarios",
     description:
-      "Handles employment, corporate tax, rental, tax interest and penalties with ease.",
+      "Handle a wide range of use cases such as employment taxes, corporate tax, rental income, withholding tax checks, MP2 returns, investment planning, and more — all in one tool.",
   },
   {
     icon: <FaUserCheck className="text-2xl text-purple-400" />,
     title: "Complete Data Privacy",
     description:
-      "Your data never leaves your device. All calculations are processed inbrowser, and no personal data is saved, shared, or transmitted.",
+      "Your data never leaves your device. All computations run securely in your browser with no storage, tracking, or transmission of personal information.",
   },
 ];
