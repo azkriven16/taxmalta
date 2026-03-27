@@ -73,15 +73,12 @@ const DatePicker = ({
   className?: string;
   hasError?: boolean;
 }) => {
-  const [date, setDate] = useState<Date | undefined>(
-    value ? new Date(value) : undefined,
-  );
+  // Fully controlled — derive display date from prop so resets propagate automatically
+  const date = value ? new Date(value) : undefined;
 
   const handleDateSelect = (selectedDate: Date | undefined) => {
-    setDate(selectedDate);
     if (selectedDate) {
-      const formattedDate = format(selectedDate, "yyyy-MM-dd");
-      onChange(formattedDate);
+      onChange(format(selectedDate, "yyyy-MM-dd"));
     } else {
       onChange("");
     }
@@ -117,7 +114,6 @@ const DatePicker = ({
           mode="single"
           selected={date}
           onSelect={handleDateSelect}
-          initialFocus
         />
       </PopoverContent>
     </Popover>
@@ -247,6 +243,40 @@ const MONTHS = [
   "December",
 ];
 
+// ─── Pure helpers (no component state) ──────────────────────────────────────
+
+function isValidDate(dateString: string): boolean {
+  if (!dateString) return false;
+  const date = new Date(dateString);
+  return (
+    !isNaN(date.getTime()) && dateString === date.toISOString().split("T")[0]
+  );
+}
+
+function isValidTaxYear(year: string): boolean {
+  const yearNum = Number.parseInt(year);
+  return yearNum >= 2007 && yearNum <= 2026;
+}
+
+function isValidAmount(amount: string): boolean {
+  const num = Number.parseFloat(amount);
+  return !isNaN(num) && num >= 0;
+}
+
+function getLastDayOfMonth(year: number, month: number): Date {
+  return new Date(year, month + 1, 0);
+}
+
+function getMonthsDifference(startDate: string | Date, endDate: string | Date): number {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  if (end <= start) return 0;
+  let months = (end.getFullYear() - start.getFullYear()) * 12;
+  months += end.getMonth() - start.getMonth();
+  if (end.getDate() < start.getDate()) months--;
+  return Math.max(0, months);
+}
+
 export default function LateTaxPenaltyCalc() {
   const [form, setForm] = useState<FormState>({
     taxpayerType: "",
@@ -263,42 +293,13 @@ export default function LateTaxPenaltyCalc() {
 
   const [errors, setErrors] = useState<ErrorState>({});
 
-  const formatNumberWithCommas = (value: number) => {
-    return value.toLocaleString("en-GB", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-  };
-
-  const isValidDate = (dateString: string): boolean => {
-    if (!dateString) return false;
-    const date = new Date(dateString);
-    return (
-      !isNaN(date.getTime()) && dateString === date.toISOString().split("T")[0]
-    );
-  };
-
-  const isValidTaxYear = (year: string, type: string): boolean => {
-    const yearNum = Number.parseInt(year);
-
-    if (type === "Corporate") {
-      return yearNum >= 2007 && yearNum <= 2026;
-    } else {
-      return yearNum >= 2007 && yearNum <= 2026;
-    }
-  };
-
-  const isValidAmount = (amount: string): boolean => {
-    const num = Number.parseFloat(amount);
-    return !isNaN(num) && num >= 0;
-  };
 
   const validateField = (field: string, value: string): void => {
     const newErrors = { ...errors };
 
     switch (field) {
       case "taxYear":
-        if (value && !isValidTaxYear(value, form.taxpayerType)) {
+        if (value && !isValidTaxYear(value)) {
           if (form.taxpayerType === "Corporate") {
             newErrors[field] =
               "Corporate tax year must be between 2007 and 2026";
@@ -354,35 +355,11 @@ export default function LateTaxPenaltyCalc() {
     setErrors(newErrors);
   };
 
-  const getLastDayOfMonth = (year: number, month: number): Date => {
-    return new Date(year, month + 1, 0);
-  };
-
-  const getMonthsDifference = (
-    startDate: string | Date,
-    endDate: string | Date,
-  ): number => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-
-    if (end <= start) return 0;
-
-    let months = (end.getFullYear() - start.getFullYear()) * 12;
-    months += end.getMonth() - start.getMonth();
-
-    if (end.getDate() < start.getDate()) {
-      months--;
-    }
-
-    return Math.max(0, months);
-  };
-
   const computeStep = (f: FormState): number => {
     let s = 1;
     if (!f.taxpayerType) return s;
     s = 2;
     if (f.taxpayerType === "Corporate" && !f.yearEnd) return s;
-    if (f.taxpayerType === "Individual") f.yearEnd = "December";
     s = 3;
     if (!f.taxYear) return s;
     s = 4;
@@ -448,8 +425,9 @@ export default function LateTaxPenaltyCalc() {
 
     setForm(newForm);
     validateField(field, value);
+  // validateField and calculateTaxPaymentDeadline close over form/errors which are listed
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form]);
+  }, [form, errors]);
 
   const getCorporateDeadline = (
     taxYearNum: number,
@@ -551,7 +529,11 @@ export default function LateTaxPenaltyCalc() {
     const filingDeadline = calculateFilingDeadline(); // manual deadline
     if (!filingDeadline) return 0;
 
-    const submissionDate = new Date(form.submittedDate);
+    // Parse as local midnight — "yyyy-MM-dd" strings parsed with new Date() are
+    // treated as UTC midnight, which sits 1-2 hours ahead of Malta local midnight
+    // and causes the eDeadline comparison to fail on the deadline day itself.
+    const [sy, sm, sd] = form.submittedDate.split("-").map(Number);
+    const submissionDate = new Date(sy, sm - 1, sd);
 
     // Check electronic submission extension: if submitted on or before the
     // e-deadline, no late submission penalty applies.
@@ -661,6 +643,23 @@ export default function LateTaxPenaltyCalc() {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form]);
+
+  const deadlineInfo = useMemo(() => {
+    const filingDeadline = calculateFilingDeadline();
+    const taxPaymentDeadline = calculateTaxPaymentDeadline();
+    const taxYearNum = form.taxYear ? Number.parseInt(form.taxYear) : null;
+    const yearEndMonthIdx =
+      form.taxpayerType === "Individual" ? 11 : MONTHS.indexOf(form.yearEnd);
+    const eDeadline =
+      taxYearNum !== null
+        ? getElectronicDeadline(form.taxpayerType, taxYearNum, yearEndMonthIdx)
+        : null;
+    return { filingDeadline, taxPaymentDeadline, eDeadline };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form]);
+
+  const fmtDate = (d: Date) =>
+    d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
 
   return (
     <div>
@@ -1072,7 +1071,7 @@ export default function LateTaxPenaltyCalc() {
                       </p>
                     </div>
                     <span className="text-lg font-semibold text-orange-900 dark:text-orange-100">
-                      €{formatNumberWithCommas(penalty)}
+                      €{formatCurrency(penalty)}
                     </span>
                   </div>
 
@@ -1086,7 +1085,7 @@ export default function LateTaxPenaltyCalc() {
                       </p>
                     </div>
                     <span className="text-lg font-semibold text-red-900 dark:text-red-100">
-                      €{formatNumberWithCommas(interest)}
+                      €{formatCurrency(interest)}
                     </span>
                   </div>
 
@@ -1131,64 +1130,41 @@ export default function LateTaxPenaltyCalc() {
                   </div>
                 )}
 
-                {step >= 5 &&
-                  (() => {
-                    const deadline = calculateTaxPaymentDeadline();
-                    const filingDeadline = calculateFilingDeadline();
-                    const taxYearNum = Number.parseInt(form.taxYear);
-                    const yearEndMonthIdx =
-                      form.taxpayerType === "Individual"
-                        ? 11
-                        : MONTHS.indexOf(form.yearEnd);
-                    const eDeadline = form.taxYear
-                      ? getElectronicDeadline(
-                          form.taxpayerType,
-                          taxYearNum,
-                          yearEndMonthIdx,
-                        )
-                      : null;
-                    const fmt = (d: Date) =>
-                      d.toLocaleDateString("en-GB", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      });
-                    return (
-                      <div className="mt-4 space-y-3">
-                        {filingDeadline && (
-                          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950">
-                            <p className="text-sm text-emerald-900 dark:text-emerald-100">
-                              <span className="font-semibold">
-                                Manual Filing Deadline:
-                              </span>{" "}
-                              {fmt(filingDeadline)}
-                            </p>
-                            {eDeadline && (
-                              <p className="mt-1 text-sm text-emerald-900 dark:text-emerald-100">
-                                <span className="font-semibold">
-                                  Electronic Submission Extension:
-                                </span>{" "}
-                                {fmt(eDeadline)}
-                                <span className="ml-1 text-xs opacity-75">
-                                  — no penalty if submitted by this date
-                                </span>
-                              </p>
-                            )}
-                          </div>
-                        )}
-                        {deadline && (
-                          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950">
-                            <p className="text-sm text-emerald-900 dark:text-emerald-100">
-                              <span className="font-semibold">
-                                Payment Deadline:
-                              </span>{" "}
-                              {fmt(deadline)}
-                            </p>
-                          </div>
+                {step >= 5 && (
+                  <div className="mt-4 space-y-3">
+                    {deadlineInfo.filingDeadline && (
+                      <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950">
+                        <p className="text-sm text-emerald-900 dark:text-emerald-100">
+                          <span className="font-semibold">
+                            Manual Filing Deadline:
+                          </span>{" "}
+                          {fmtDate(deadlineInfo.filingDeadline)}
+                        </p>
+                        {deadlineInfo.eDeadline && (
+                          <p className="mt-1 text-sm text-emerald-900 dark:text-emerald-100">
+                            <span className="font-semibold">
+                              Electronic Submission Extension:
+                            </span>{" "}
+                            {fmtDate(deadlineInfo.eDeadline)}
+                            <span className="ml-1 text-xs opacity-75">
+                              — no penalty if submitted by this date
+                            </span>
+                          </p>
                         )}
                       </div>
-                    );
-                  })()}
+                    )}
+                    {deadlineInfo.taxPaymentDeadline && (
+                      <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950">
+                        <p className="text-sm text-emerald-900 dark:text-emerald-100">
+                          <span className="font-semibold">
+                            Payment Deadline:
+                          </span>{" "}
+                          {fmtDate(deadlineInfo.taxPaymentDeadline)}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {step === 7 && interestBreakdown.length > 0 && (
                   <div className="mt-6 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
@@ -1210,7 +1186,7 @@ export default function LateTaxPenaltyCalc() {
                             </p>
                           </div>
                           <span className="text-card-foreground font-semibold">
-                            €{formatNumberWithCommas(item.amount)}
+                            €{formatCurrency(item.amount)}
                           </span>
                         </div>
                       ))}

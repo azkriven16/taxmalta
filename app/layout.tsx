@@ -2,6 +2,7 @@ import { Footer } from "@/components/footer";
 import { NavbarDemo } from "@/components/navbar";
 import { Providers } from "@/components/providers";
 import { Toaster } from "@/components/ui/sonner";
+import { GoogleAnalytics } from "@next/third-parties/google";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import React from "react";
@@ -19,7 +20,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "CipTaxPro | Free Malta Tax & Compliance Calculators",
+    default: "CipTaxPro | Free Tax & Compliance Calculators",
     template: "%s | CipTaxPro",
   },
   description:
@@ -47,7 +48,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "CipTaxPro | Free Malta Tax & Compliance Calculators",
+    title: "CipTaxPro | Free Tax & Compliance Calculators",
     description:
       "Instant, reliable estimates for your Malta tax, audit, and compliance obligations. Try our calculators – no sign-in required.",
   },
@@ -81,6 +82,7 @@ export default function RootLayout({
           <Toaster />
         </Providers>
       </body>
+      <GoogleAnalytics gaId="G-YMNECS1VVK" />
     </html>
   );
 }
