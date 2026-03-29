@@ -10,9 +10,9 @@ import {
 } from "@/components/ui/breadcrumb";
 
 export const metadata: Metadata = {
-  title: "MP2 Ladder Investment Calculator",
+  title: "Pag-IBIG MP2 Ladder Investment Calculator (Philippines)",
   description:
-    "Plan up to 5 simultaneous MP2 (Modified Pag-IBIG 2) accounts. Each account starts one year apart, compounding dividends over its own 5-year maturity. See combined projections and year-by-year dividend breakdowns.",
+    "Plan up to 5 staggered MP2 accounts, each starting one year apart. See compounded dividends per account, combined projections, and a year-by-year income breakdown over each 5-year maturity.",
 };
 
 export default function Page() {

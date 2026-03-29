@@ -10,9 +10,9 @@ import {
 import ParentTaxCalc from "./_components/personal-tax-calculator";
 
 export const metadata: Metadata = {
-  title: "Parent Rates Tax Calculator",
+  title: "Malta Personal Tax Calculator — Parent Rates",
   description:
-    "Maximize your tax savings in Malta using parent-specific rates. Calculate your net income while accounting for deductions available to parents.",
+    "Estimate your Malta income tax using the parent tax rates for married couples with dependants. Includes a full tax band breakdown and net income calculation.",
 };
 
 export default function Page() {

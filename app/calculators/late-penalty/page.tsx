@@ -10,9 +10,9 @@ import {
 } from "@/components/ui/breadcrumb";
 
 export const metadata: Metadata = {
-  title: "Late Tax Penalty & Interest Calculator",
+  title: "Malta Income Tax Penalty & Interest Calculator",
   description:
-    "Accurately estimate interest and penalties on overdue taxes in Malta. Avoid unnecessary costs with a clear breakdown based on the latest Maltese tax regulations.",
+    "Estimate penalties and interest on overdue Malta income tax returns and payments. Covers corporate and individual taxpayers with the latest MTCA rates and electronic filing extension deadlines.",
 };
 
 export default function Page() {

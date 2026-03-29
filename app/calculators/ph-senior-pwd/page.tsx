@@ -10,9 +10,9 @@ import {
 } from "@/components/ui/breadcrumb";
 
 export const metadata: Metadata = {
-  title: "SENIOR/PWD Discount Calculator",
+  title: "Philippines Senior Citizen & PWD Discount Calculator",
   description:
-    "Check if you're getting the right Senior Citizen or PWD discount. Automatically computes discounts, VAT exemptions, and total payable based on Philippine rules.",
+    "Verify your Senior Citizen or Person with Disability discount, VAT exemption, and total amount payable. Supports single and group bills based on the latest Philippine discount rules.",
 };
 
 export default function Page() {

@@ -10,9 +10,9 @@ import type { Metadata } from "next";
 import WithholdingTaxCalculator from "./_components/salary-withholding-tax-validation-calculator";
 
 export const metadata: Metadata = {
-  title: "Employment Notice Period Calculator",
+  title: "Malta Salary Withholding Tax Calculator",
   description:
-    "Calculate your required notice period and final working day in Malta based on your length of service. Plan your career move smoothly and stay compliant.",
+    "Calculate the tax withheld from your Malta employment income. Verify your employer's withholding is correct and see a full breakdown based on your gross salary and applicable tax band.",
 };
 
 export default function Page() {

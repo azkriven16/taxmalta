@@ -10,9 +10,9 @@ import {
 } from "@/components/ui/breadcrumb";
 
 export const metadata: Metadata = {
-  title: "Withholding Tax Validation Calculator (Philippines)",
+  title: "Philippines Withholding Tax Calculator (BIR 2026)",
   description:
-    "Compute your per-payslip withholding tax for 2026 using the BIR Revised Withholding Tax Table. Supports Private and Government employees on Weekly, Semi-Monthly, or Monthly payroll. Automatically deducts SSS/GSIS, PhilHealth, and Pag-IBIG contributions.",
+    "Compute your per-payslip withholding tax using the 2026 BIR Revised Withholding Tax Table. Supports private and government employees on weekly, semi-monthly, or monthly payroll. Automatically deducts SSS/GSIS, PhilHealth, and Pag-IBIG contributions.",
 };
 
 export default function Page() {

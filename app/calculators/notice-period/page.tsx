@@ -10,9 +10,9 @@ import {
 } from "@/components/ui/breadcrumb";
 
 export const metadata: Metadata = {
-  title: "Employment Notice Period Calculator",
+  title: "Malta Employment Notice Period Calculator",
   description:
-    "Calculate your required notice period and final working day in Malta based on your length of service. Plan your career move smoothly and stay compliant.",
+    "Calculate your minimum legal notice period and last working day in Malta. Based on the Employment and Industrial Relations Act, covering all lengths of service.",
 };
 
 export default function Page() {

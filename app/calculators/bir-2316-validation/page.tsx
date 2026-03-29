@@ -10,9 +10,9 @@ import {
 } from "@/components/ui/breadcrumb";
 
 export const metadata: Metadata = {
-  title: "BIR Form 2316 Validation Calculator",
+  title: "Philippines BIR Form 2316 Withholding Tax Validator",
   description:
-    "Validate the withholding tax on your BIR Form 2316. Compute your correct annual tax due based on the 2025 Revised Withholding Tax Table, including de minimis benefits, government contributions, and the ₱90,000 13th month pay ceiling.",
+    "Verify the annual withholding tax on your BIR Form 2316. Computes correct tax due using the 2025 Revised Withholding Tax Table, including de minimis benefits, government contributions, and the ₱90,000 13th month pay ceiling.",
 };
 
 export default function Page() {

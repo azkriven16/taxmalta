@@ -10,9 +10,9 @@ import {
 import RentalIncomeTaxCalculator from "./_components/rental-income-tax-calculator";
 
 export const metadata: Metadata = {
-  title: "Rental Income Tax Calculator",
+  title: "Malta Rental Income Tax Calculator",
   description:
-    "Compare the 15% flat rate against progressive tax rates to find the most cost-effective way to declare your rental earnings in Malta.",
+    "Compare the 15% flat rate against the standard progressive rates to find the most tax-efficient way to declare your rental income in Malta. Instant side-by-side comparison with full breakdown.",
 };
 
 export default function Page() {

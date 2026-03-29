@@ -10,9 +10,9 @@ import {
 import SingleTaxCalc from "./_components/personal-tax-calculator";
 
 export const metadata: Metadata = {
-  title: "Personal Income Tax Calculator (Single Status)",
+  title: "Malta Personal Tax Calculator — Single Rates",
   description:
-    "Calculate your Malta personal income tax under the single filing status. View exact tax bands, rates, and net income based on your gross earnings.",
+    "Estimate your Malta personal income tax under the single filing status. View exact tax bands, rates, and net income based on your gross annual earnings.",
 };
 
 export default function Page() {

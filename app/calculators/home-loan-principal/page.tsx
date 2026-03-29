@@ -10,9 +10,9 @@ import {
 } from "@/components/ui/breadcrumb";
 
 export const metadata: Metadata = {
-  title: "Home Loan Applied to Principal Calculator",
+  title: "Philippines Home Loan Extra Principal Payment Calculator",
   description:
-    "Find out how much time and interest you save by paying extra towards your home loan principal. Calculate how long it takes to pay off your loan, or how much you need to pay to finish by a target date.",
+    "Find out how much interest and time you save by making extra payments toward your home loan principal. Calculate your payoff date or the extra amount needed to meet a target settlement date.",
 };
 
 export default function Page() {

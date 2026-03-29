@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { CalculatorsSection } from "@/components/sections/calculators-section";
-import { ContactSection } from "@/components/sections/contact-section";
 import { HeroSection } from "@/components/sections/hero-section";
 
 export const metadata: Metadata = {
@@ -14,7 +13,6 @@ export default function Page() {
     <main className="container mx-auto flex flex-col gap-20 p-4 pt-24 lg:gap-36 lg:p-8">
       <HeroSection />
       <CalculatorsSection />
-      <ContactSection />
     </main>
   );
 }

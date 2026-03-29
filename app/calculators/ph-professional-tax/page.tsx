@@ -10,9 +10,9 @@ import {
 } from "@/components/ui/breadcrumb";
 
 export const metadata: Metadata = {
-  title: "Professional / Single Proprietor Tax Calculator (Philippines)",
+  title: "Philippines Professional & Self-Employed Tax Calculator",
   description:
-    "Compare your Philippine tax obligations under Itemised Deduction, 40% OSD, and the 8% flat rate. Includes One Person Corporation comparison. Based on the 2026 income tax table.",
+    "Compare your Philippine income tax under Itemised Deduction, 40% OSD, and the 8% flat rate. Includes One Person Corporation (OPC) comparison. Based on the 2026 BIR income tax table.",
 };
 
 export default function Page() {

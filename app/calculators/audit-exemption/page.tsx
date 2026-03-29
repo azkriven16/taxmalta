@@ -10,9 +10,9 @@ import {
 import AuditExemptionCalculator from "./_components/audit-exemption-calculator";
 
 export const metadata: Metadata = {
-  title: "Audit Exemption Eligibility Calculator",
+  title: "Malta Audit Exemption Eligibility Calculator",
   description:
-    "Check if your Malta-based company meets the legal thresholds for an audit exemption. Enter your turnover, asset value, and employee count for instant results.",
+    "Instantly check whether your Malta company qualifies for an audit exemption under the Companies Act. Enter your turnover, total assets, and employee count to verify eligibility against the official thresholds.",
 };
 
 export default function Page() {

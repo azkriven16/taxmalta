@@ -10,9 +10,9 @@ import {
 } from "@/components/ui/breadcrumb";
 
 export const metadata: Metadata = {
-  title: "Year-End Tax Adjustment Calculator (Philippines)",
+  title: "Philippines Year-End Tax Adjustment Calculator (BIR 2026)",
   description:
-    "Consolidate compensation income from up to 4 employers and compute your annual income tax for 2026. Compare your total tax due against cumulative withholding to determine if you are over or under-withheld at year-end.",
+    "Consolidate income from up to 4 employers and compute your 2026 annual income tax. Compare total tax due vs. cumulative withholding to see if you are over- or under-withheld at year-end.",
 };
 
 export default function Page() {

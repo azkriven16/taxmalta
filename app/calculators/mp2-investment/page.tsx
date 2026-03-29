@@ -10,9 +10,9 @@ import {
 } from "@/components/ui/breadcrumb";
 
 export const metadata: Metadata = {
-  title: "MP2 Investment Calculator",
+  title: "Pag-IBIG MP2 Investment Calculator (Philippines)",
   description:
-    "Project your Modified Pag-IBIG 2 (MP2) savings over the 5-year maturity period using actual historical dividend rates. Compare Annual Payout vs. Compounded modes to see how much you will earn.",
+    "Project your Modified Pag-IBIG 2 (MP2) savings using actual historical dividend rates. Compare Annual Payout vs. Compounded modes over the full 5-year maturity period.",
 };
 
 export default function Page() {
