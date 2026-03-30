@@ -44,16 +44,18 @@ function FieldRow({
   bold = false,
   highlight = false,
   indent = false,
+  subIndent = false,
 }: {
   label: string;
   value: string;
   bold?: boolean;
   highlight?: boolean;
   indent?: boolean;
+  subIndent?: boolean;
 }) {
   return (
     <div
-      className={`flex items-center justify-between py-2.5 ${indent ? "pl-4" : ""}`}
+      className={`flex items-center justify-between py-2.5 ${subIndent ? "pl-8" : indent ? "pl-4" : ""}`}
     >
       <span
         className={`text-sm ${bold ? "font-semibold text-foreground" : "text-muted-foreground"}`}
@@ -599,52 +601,50 @@ export default function Bir2316ValidationCalculator() {
                         </AccordionTrigger>
                         <AccordionContent className="divide-y pb-0">
                           <FieldRow
-                            label="13th Month Pay & Other Benefits (Line 32)"
+                            label="13th Month Pay & Other Benefits (Line 34)"
                             value={php(result.nonTaxable13thAndBenefits)}
                             indent
                           />
                           <FieldRow
-                            label="De Minimis Benefits (Line 33)"
+                            label="De Minimis Benefits (Line 35)"
                             value={php(result.deMinimis)}
                             indent
                           />
                           <FieldRow
-                            label={`${isPrivate ? "SSS" : "GSIS"}, PhilHealth, Pag-IBIG & Union Dues (Line 34)`}
+                            label={`${isPrivate ? "SSS" : "GSIS"}, PhilHealth, Pag-IBIG & Union Dues (Line 36)`}
                             value={php(result.totalGovtContribs)}
                             indent
                           />
                           {isPrivate ? (
-                            <>
-                              <FieldRow
-                                label="SSS Employee Share"
-                                value={php(result.sss)}
-                                indent
-                              />
-                            </>
+                            <FieldRow
+                              label="SSS Employee Share"
+                              value={php(result.sss)}
+                              subIndent
+                            />
                           ) : (
                             <FieldRow
                               label="GSIS Employee Share (9%)"
                               value={php(result.gsis)}
-                              indent
+                              subIndent
                             />
                           )}
                           <FieldRow
                             label="PhilHealth Employee Share (2.5%, max ₱2,500/mo)"
                             value={php(result.philHealth)}
-                            indent
+                            subIndent
                           />
                           <FieldRow
                             label="Pag-IBIG Employee Share (2%, max ₱200/mo)"
                             value={php(result.pagIbig)}
-                            indent
+                            subIndent
                           />
                           <FieldRow
-                            label="Other Non-Taxable / Exempt (Line 35)"
+                            label="Other Non-Taxable / Exempt (Line 37)"
                             value={php(parse("otherNonTaxable"))}
                             indent
                           />
                           <FieldRow
-                            label="Total Non-Taxable (Line 36)"
+                            label="Total Non-Taxable (Line 38)"
                             value={php(result.totalNonTaxable)}
                             bold
                           />
@@ -658,32 +658,32 @@ export default function Bir2316ValidationCalculator() {
                         </AccordionTrigger>
                         <AccordionContent className="divide-y pb-0">
                           <FieldRow
-                            label="Basic Salary (Line 37)"
+                            label="Basic Salary (Line 39)"
                             value={php(parse("basicSalary"))}
                             indent
                           />
                           <FieldRow
-                            label="Living Allowances (Lines 38–41)"
+                            label="Living Allowances (Total of Lines 40–43)"
                             value={php(parse("livingAllowances"))}
                             indent
                           />
                           <FieldRow
-                            label="Other Taxable Regular Compensation (Lines 42–45)"
+                            label="Other Taxable Regular Compensation (Total of Lines 44–47)"
                             value={php(parse("otherTaxableRegular"))}
                             indent
                           />
                           <FieldRow
-                            label="Taxable 13th Month Pay & Benefits (Line 46)"
+                            label="Taxable 13th Month Pay & Benefits (Line 48)"
                             value={php(result.taxable13th)}
                             indent
                           />
                           <FieldRow
-                            label="Overtime / Hazard Pay (Lines 47–48)"
+                            label="Overtime / Hazard Pay (Total of Lines 49–50)"
                             value={php(parse("overtimePay"))}
                             indent
                           />
                           <FieldRow
-                            label="Total Taxable Compensation (Line 50)"
+                            label="Total Taxable Compensation (Line 52)"
                             value={php(result.totalTaxable)}
                             bold
                             highlight

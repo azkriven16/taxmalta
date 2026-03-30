@@ -12,7 +12,7 @@ type Status = "idle" | "sending" | "success" | "error";
 export function ContactSection() {
   const [status, setStatus] = useState<Status>("idle");
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     setStatus("sending");
 
@@ -118,6 +118,44 @@ export function ContactSection() {
                 rows={5}
                 className="resize-none"
               />
+            </div>
+
+            <div className="space-y-3 rounded-lg border p-4">
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  id="privacy-read"
+                  required
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+                />
+                <label htmlFor="privacy-read" className="text-sm leading-snug">
+                  I have read and understood the{" "}
+                  <a
+                    href="/privacy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline"
+                  >
+                    Data Privacy Notice
+                  </a>
+                </label>
+              </div>
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  id="privacy-consent"
+                  required
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+                />
+                <label
+                  htmlFor="privacy-consent"
+                  className="text-sm leading-snug"
+                >
+                  I give my consent to CipTaxPro to process both my personal
+                  information and sensitive personal information for the purposes
+                  described in the Privacy Notice
+                </label>
+              </div>
             </div>
 
             {status === "error" && (
